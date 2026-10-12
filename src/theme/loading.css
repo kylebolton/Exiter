@@ -1,0 +1,19 @@
+/* Loading states: X's static splash (#placeholder) is a full-screen black layer with a white X, and <body> is black until X's script sets its
+   theme, so every launch and reload flashed black inside an otherwise light UI. Paint both with our tokens and show the Exiter mark instead. */
+html, body { background-color: var(--background) !important; }
+#placeholder { background: var(--background) !important; }
+#placeholder > svg { display: none !important; }
+#placeholder::after {
+  content: ""; position: absolute; left: 50%; top: 50%; width: 72px; height: 72px; margin: -36px 0 0 -36px;
+  background: url("data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20viewBox=%220%200%201024%201024%22%20width=%221024%22%20height=%221024%22%3E%3Cdefs%3E%3ClinearGradient%20id=%22bg%22%20x1=%220%22%20y1=%220%22%20x2=%221%22%20y2=%221%22%3E%3Cstop%20offset=%220%22%20stop-color=%22%23101026%22/%3E%3Cstop%20offset=%221%22%20stop-color=%22%23000%22/%3E%3C/linearGradient%3E%3ClinearGradient%20id=%22a%22%20x1=%220%22%20y1=%220%22%20x2=%221%22%20y2=%221%22%3E%3Cstop%20offset=%220%22%20stop-color=%22%2322d3ee%22/%3E%3Cstop%20offset=%220.5%22%20stop-color=%22%236366f1%22/%3E%3Cstop%20offset=%221%22%20stop-color=%22%23a855f7%22/%3E%3C/linearGradient%3E%3Cfilter%20id=%22g%22%20x=%22-30%25%22%20y=%22-30%25%22%20width=%22160%25%22%20height=%22160%25%22%3E%3CfeGaussianBlur%20stdDeviation=%2214%22/%3E%3C/filter%3E%3C/defs%3E%3Crect%20x=%2248%22%20y=%2248%22%20width=%22928%22%20height=%22928%22%20rx=%22210%22%20fill=%22url(%23bg)%22/%3E%3Cg%20opacity=%220.5%22%20filter=%22url(%23g)%22%20fill=%22none%22%20stroke-linecap=%22round%22%3E%3Cpath%20d=%22M300%20300%20L724%20724%22%20stroke=%22%236d7bff%22%20stroke-width=%22130%22/%3E%3Cpath%20d=%22M724%20300%20L300%20724%22%20stroke=%22%23c9d2ff%22%20stroke-width=%22130%22/%3E%3C/g%3E%3Cpath%20d=%22M300%20300%20L724%20724%22%20stroke=%22url(%23a)%22%20stroke-width=%22116%22%20stroke-linecap=%22round%22%20fill=%22none%22/%3E%3Cpath%20d=%22M724%20300%20L300%20724%22%20stroke=%22%23fff%22%20stroke-width=%22116%22%20stroke-linecap=%22round%22%20fill=%22none%22/%3E%3C/svg%3E") center / contain no-repeat;
+  animation: ex-breathe 1.8s ease-in-out infinite;
+}
+@keyframes ex-breathe { 50% { opacity: 0.55; scale: 0.96; } }
+@media (prefers-reduced-motion: reduce) { #placeholder::after { animation: none; } }
+
+/* In-feed loading: X's spinner and top progress bar use hard-coded Twitter blue; move them to the neutral palette */
+[role="progressbar"] > div[style*="26px"] { width: 20px !important; height: 20px !important; }
+[role="progressbar"] circle:first-child { stroke: var(--border) !important; opacity: 1 !important; }
+[role="progressbar"] circle:last-child { stroke: var(--muted-foreground) !important; }
+[role="progressbar"] circle { stroke-width: 3 !important; }
+[data-testid="progressBar-bar"] { background-color: var(--foreground) !important; }

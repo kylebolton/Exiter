@@ -37,8 +37,9 @@ let quitting = false;
 const css = (name) => fs.readFileSync(path.join(__dirname, 'theme', name), 'utf8');
 
 // The skin is injected by preload.js at document start (synchronously, before first paint), so a reload never flashes unstyled X.
-const CSS_FILES = ['fonts', 'tokens', 'shell', 'nav', 'feed', 'composer', 'overlays', 'pages', 'hide'];
+const CSS_FILES = ['tokens', 'shell', 'nav', 'feed', 'composer', 'overlays', 'pages', 'loading', 'hide'];
 ipcMain.on('exiter:get-css', (e) => { e.returnValue = CSS_FILES.map((n) => css(`${n}.css`)).join('\n'); });
+ipcMain.on('exiter:get-fonts', (e) => { e.returnValue = JSON.parse(fs.readFileSync(path.join(__dirname, 'theme', 'fonts.json'), 'utf8')).faces; });
 ipcMain.on('exiter:get-settings-sync', (e) => { e.returnValue = getSettings(); });
 
 function applyZoom() {
@@ -97,9 +98,15 @@ ipcMain.handle('exiter:reset-settings', async () => {
   return getSettings();
 });
 
-function openSettings() {
-  if (settingsWin && !settingsWin.isDestroyed()) { settingsWin.show(); settingsWin.focus(); return; }
+// The Settings window is built hidden shortly after launch and hidden (not destroyed) on close, so opening it is instant.
+let settingsReady = false;
+let settingsWantShow = false;
+
+function buildSettingsWindow() {
+  if (settingsWin && !settingsWin.isDestroyed()) return settingsWin;
+  settingsReady = false;
   settingsWin = new BrowserWindow({
+    show: false,
     width: 560, height: 720, minWidth: 480, minHeight: 480,
     title: 'Exiter Settings',
     backgroundColor: getSettings().theme === 'dark' ? '#09090b' : '#ffffff',
@@ -110,7 +117,21 @@ function openSettings() {
   });
   settingsWin.loadFile(path.join(__dirname, 'settings', 'index.html'));
   if (process.env.EXITER_DEBUG_PORT) console.log('EXITER_SETTINGS_WINDOW_ID', settingsWin.getMediaSourceId().split(':')[1]);
+  settingsWin.once('ready-to-show', () => {
+    settingsReady = true;
+    if (settingsWantShow) { settingsWin.show(); settingsWin.focus(); }
+  });
+  settingsWin.on('close', (e) => {
+    if (!quitting) { e.preventDefault(); settingsWantShow = false; settingsWin.hide(); }
+  });
   settingsWin.on('closed', () => { settingsWin = null; });
+  return settingsWin;
+}
+
+function openSettings() {
+  settingsWantShow = true;
+  const w = buildSettingsWindow();
+  if (settingsReady) { w.show(); w.focus(); }
 }
 
 function createWindow() {
@@ -168,7 +189,8 @@ function createWindow() {
   win.on('close', (e) => {
     if (isMac && !quitting) { e.preventDefault(); win.hide(); }
   });
-  win.on('closed', () => { win = null; });
+  // Windows/Linux: a hidden (warm) Settings window must not keep the app alive after the main window closes
+  win.on('closed', () => { win = null; if (!isMac) app.quit(); });
 }
 
 function refreshTimeline() {
@@ -275,6 +297,7 @@ app.whenReady().then(async () => {
   createWindow();
   buildTray();
   broadcastSettings();
+  setTimeout(() => { if (app.isReady()) buildSettingsWindow(); }, 2500);
   updater.start({ beforeQuit: () => { quitting = true; }, automatic: getSettings().autoUpdate });
   if (process.env.EXITER_OPEN_SETTINGS) openSettings();
   globalShortcut.register('CommandOrControl+Shift+X', toggleWindow);

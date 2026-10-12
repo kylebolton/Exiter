@@ -27,11 +27,19 @@ button[data-exiter-refresh][data-spinning] svg { animation: ex-spin 0.7s ease-in
 /* The header action container X gives the "+" is a column; make it a row so refresh sits beside it */
 [data-exiter-hdr-actions] { flex-direction: row !important; width: auto !important; align-items: center !important; padding-right: 8px; gap: 2px; }
 
-/* "New posts" pill: shadcn secondary button */
+/* "See new posts" pill: a shadcn floating button. X slides its wrapper into view itself, so only the button is styled (no extra entrance motion). */
 button[aria-label^="New posts are available"] {
-  background: var(--foreground) !important; color: var(--background) !important; border: 0 !important; border-radius: 999px !important; box-shadow: var(--shadow-pop) !important;
+  height: 36px !important; padding: 0 14px 0 12px !important; box-sizing: border-box;
+  background: var(--background) !important; color: var(--foreground) !important;
+  border: 1px solid var(--border) !important; border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-pop) !important; cursor: pointer; transition: background-color 0.12s ease;
 }
-button[aria-label^="New posts are available"] * { color: var(--background) !important; font-size: 13px !important; font-weight: 500 !important; }
+button[aria-label^="New posts are available"]:hover { background: var(--muted) !important; }
+button[aria-label^="New posts are available"] > div { display: flex !important; align-items: center !important; gap: 8px; }
+button[aria-label^="New posts are available"] svg { width: 16px !important; height: 16px !important; color: var(--foreground) !important; }
+button[aria-label^="New posts are available"] [data-testid="pillLabel"], button[aria-label^="New posts are available"] [data-testid="pillLabel"] * {
+  color: var(--foreground) !important; font-size: 13px !important; font-weight: 500 !important; line-height: 20px !important;
+}
 
 /* ---------- Post rows (hairline-divided, not cards) ---------- */
 article[data-testid="tweet"] { transition: background-color 0.12s ease; }

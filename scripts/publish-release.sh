@@ -36,6 +36,7 @@ cp "$notes" "$stage/$(basename "$mac_zip" .zip).md"
 npx electron-sparkle generate-appcast "$stage" \
   --account "$sparkle_account" \
   --download-url-prefix "https://github.com/$repo/releases/download/$tag/" \
+  --maximum-deltas 0 \
   --embed-release-notes
 [[ -f "$stage/appcast.xml" ]] || { echo "appcast.xml was not generated" >&2; exit 1; }
 

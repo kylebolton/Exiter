@@ -2,9 +2,12 @@
 
 /* preload.js tags the one ancestor of the label that X gives a border; make it a shadcn input */
 [data-exiter-input] {
-  border-width: 1px !important; border-radius: 10px !important; border-color: var(--border) !important;
+  border-width: 1px !important; border-radius: var(--radius-input) !important; border-color: var(--border) !important;
+  overflow: clip;
   padding-inline: 12px !important; box-sizing: border-box; min-height: 44px; transition: border-color 0.12s ease, box-shadow 0.12s ease;
 }
+/* Anything X paints inside the box follows its corners */
+[data-exiter-input] > *, [data-exiter-input] > * > * { border-radius: inherit; }
 [data-exiter-input]:focus-within { border-color: var(--ring) !important; box-shadow: 0 0 0 2px color-mix(in srgb, var(--ring) 20%, transparent) !important; }
 
 [data-testid="tweetTextarea_0_label"], [data-testid="tweetTextarea_0_label"] *, [data-testid="tweetTextarea_0"], [data-testid="tweetTextarea_0"] * { outline: 0 !important; box-shadow: none !important; }

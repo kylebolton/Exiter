@@ -52,6 +52,7 @@ const ICON_MAP = [
   ['article a[href$="/analytics"]', 'chart'],
   ['article button[aria-label="Share post"]', 'share'],
   ['button[aria-label="Manage timelines"]', 'plus'],
+  ['button[aria-label^="New posts are available"]', 'arrowUp'],
   ['button[aria-label="Add photos or video"]', 'image'],
   ['[data-testid="gifSearchButton"]', 'gif'],
   ['[data-testid="createPollButton"]', 'list'],
@@ -215,13 +216,21 @@ function injectSkin() {
   }
   return true;
 }
-try {
-  if (location.protocol === 'file:') throw new Error('skip');
-  if (injectSkin()) applySettings(ipcRenderer.sendSync('exiter:get-settings-sync'));
-  else document.addEventListener('readystatechange', () => { injectSkin(); applySettings(ipcRenderer.sendSync('exiter:get-settings-sync')); }, { once: true });
-} catch (err) { if (err.message !== 'skip') console.warn('exiter inject failed', err); }
-// Keep it alive if X ever rebuilds the document element's children
-new MutationObserver(() => { if (!document.getElementById('exiter-css')) injectSkin(); }).observe(document, { childList: true, subtree: false });
+// At preload time <html> may not exist yet (the page is still arriving). Apply the skin AND the settings (theme, hiding, vars) together
+// the moment it does, so a slow load never paints a light page for dark-theme users.
+function bootstrap() {
+  if (!injectSkin()) return false;
+  applySettings(current || ipcRenderer.sendSync('exiter:get-settings-sync'));
+  return true;
+}
+if (location.protocol !== 'file:') {
+  try {
+    bootstrap();
+    // Re-run if X ever replaces the document element's children, or if <html> only appears after this script
+    new MutationObserver(() => { if (!document.getElementById('exiter-css')) bootstrap(); }).observe(document, { childList: true, subtree: false });
+    document.addEventListener('readystatechange', () => { if (!document.getElementById('exiter-css')) bootstrap(); });
+  } catch (err) { console.warn('exiter inject failed', err); }
+}
 
 /* ---------- Timeline refresh ---------- */
 function refreshTimeline() {
@@ -369,10 +378,13 @@ function runActive(i) {
   setTimeout(cmd.run, 0);
 }
 
-function openPalette() {
-  if (palette) return;
+let warm = null; // the palette's DOM, built once at idle and reused; `palette` is only set while it is open
+
+function ensureWarm() {
+  if (warm) return warm;
   const host = document.createElement('div');
   host.id = 'exiter-palette';
+  host.style.display = 'none';
   const root = host.attachShadow({ mode: 'open' });
   root.innerHTML = `<style>${PALETTE_CSS}</style>
     <div class="overlay"><div class="panel" role="dialog" aria-modal="true" aria-label="Command palette">
@@ -381,11 +393,12 @@ function openPalette() {
       <div class="list" id="list" role="listbox"></div>
       <div class="foot"><span><kbd>↑</kbd><kbd>↓</kbd> Navigate</span><span><kbd>↵</kbd> Select</span></div>
     </div></div>`;
-  document.documentElement.appendChild(host);
-  palette = { host, input: root.querySelector('input'), list: root.querySelector('.list'), items: [], active: 0, restore: document.activeElement };
+  (document.body || document.documentElement).appendChild(host);
+  warm = { host, input: root.querySelector('input'), list: root.querySelector('.list') };
   root.querySelector('.overlay').addEventListener('mousedown', (e) => { if (e.target.classList.contains('overlay')) closePalette(); });
-  palette.input.addEventListener('input', () => { palette.active = 0; renderPalette(); });
-  palette.input.addEventListener('keydown', (e) => {
+  warm.input.addEventListener('input', () => { if (!palette) return; palette.active = 0; renderPalette(); });
+  warm.input.addEventListener('keydown', (e) => {
+    if (!palette) return;
     const n = palette.items.length;
     if (e.key === 'ArrowDown') { e.preventDefault(); if (n) { palette.active = (palette.active + 1) % n; markActive(); } }
     else if (e.key === 'ArrowUp') { e.preventDefault(); if (n) { palette.active = (palette.active - 1 + n) % n; markActive(); } }
@@ -393,15 +406,24 @@ function openPalette() {
     else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closePalette(); }
     else if (e.key === 'Tab') { e.preventDefault(); } // focus stays in the palette while it is open
   });
+  return warm;
+}
+
+function openPalette() {
+  if (palette) return;
+  const w = ensureWarm();
+  palette = { host: w.host, input: w.input, list: w.list, items: [], active: 0, restore: document.activeElement };
+  w.input.value = '';
+  w.host.style.display = ''; // display none -> block restarts the open animation
   renderPalette();
-  palette.input.focus();
+  w.input.focus();
 }
 
 function closePalette() {
   if (!palette) return;
   const { host, restore } = palette;
   palette = null;
-  host.remove();
+  host.style.display = 'none';
   if (restore && typeof restore.focus === 'function' && document.contains(restore)) restore.focus();
 }
 
@@ -411,3 +433,33 @@ window.addEventListener('keydown', (e) => {
     palette ? closePalette() : openPalette();
   }
 }, true);
+
+/* ---------- Warm-up: have the real fonts decoded and connections open before the first menu, palette or image needs them ---------- */
+function loadFonts() {
+  // Raw bytes through the FontFace API: x.com's CSP blocks data: URLs in @font-face, but not this
+  try {
+    for (const f of ipcRenderer.sendSync('exiter:get-fonts')) {
+      const bytes = Uint8Array.from(atob(f.data), (c) => c.charCodeAt(0));
+      const face = new FontFace(f.family, bytes.buffer, { weight: f.weight, style: 'normal', display: 'block' });
+      face.load().then(() => document.fonts.add(face)).catch((err) => console.warn('[exiter] font failed:', f.family, f.weight, err && err.message));
+    }
+  } catch (err) { console.warn('[exiter] fonts:', err && err.message); }
+}
+
+function warmUp() {
+  const head = document.head || document.documentElement;
+  ['https://pbs.twimg.com', 'https://video.twimg.com', 'https://abs.twimg.com', 'https://api.x.com'].forEach((href) => {
+    if (document.querySelector(`link[rel="preconnect"][href="${href}"]`)) return;
+    const l = document.createElement('link');
+    l.rel = 'preconnect'; l.href = href; l.crossOrigin = '';
+    head.appendChild(l);
+  });
+}
+if (location.protocol !== 'file:') {
+  loadFonts();
+  try { warmUp(); } catch {}
+  window.addEventListener('DOMContentLoaded', () => {
+    warmUp();
+    (window.requestIdleCallback || ((cb) => setTimeout(cb, 1500)))(() => ensureWarm(), { timeout: 4000 });
+  });
+}

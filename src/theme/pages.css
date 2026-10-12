@@ -2,7 +2,7 @@
 
 /* Search input (Explore / search pages) */
 [data-testid="SearchBox_Search_Input"], form[role="search"] > div > div, form[role="search"] > div > div > div {
-  border-radius: var(--radius) !important; background: transparent !important; border-color: var(--border) !important;
+  border-radius: var(--radius-input) !important; background: transparent !important; border-color: var(--border) !important;
 }
 form[role="search"] input { font-size: 14px !important; }
 form[role="search"] svg { width: 16px !important; height: 16px !important; color: var(--muted-foreground) !important; }

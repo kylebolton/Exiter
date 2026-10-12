@@ -13,6 +13,7 @@
 
   --radius: 8px;          /* controls */
   --radius-lg: 12px;      /* popovers, dialogs, media, quote cards */
+  --radius-input: var(--radius-lg);  /* every text input: composer, reply, search (moves with the Settings radius) */
   --shadow-pop: 0 8px 30px rgba(0, 0, 0, 0.12);
   --hover-tint: color-mix(in srgb, var(--muted) 55%, transparent);
 
@@ -24,8 +25,8 @@
   --ex-leading: 1.55;
   --media-max: 620px;
 
-  --font-sans: "Geist", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
-  --font-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --font-sans: "Exiter Geist", "Geist", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "Exiter Geist Mono", "Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --ex-font: var(--font-sans);
 }
 

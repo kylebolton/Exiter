@@ -15,4 +15,12 @@ ${sansFaces}
 @font-face { font-family: "Geist Mono"; font-weight: 400; font-style: normal; font-display: block; src: url(data:font/woff2;base64,${b64('geist-mono/GeistMono-Regular.woff2')}) format("woff2"); }
 `;
 fs.writeFileSync(path.join(__dirname, '..', 'src', 'theme', 'fonts.css'), css);
+
+// x.com's Content-Security-Policy blocks data: fonts, so the app loads these as raw bytes through the FontFace API instead
+// (see preload.js). fonts.css remains for the Settings window, which has its own page and CSP.
+const faces = [
+  ...weights.map(([w, name]) => ({ family: 'Exiter Geist', weight: String(w), data: b64(`geist-sans/Geist-${name}.woff2`) })),
+  { family: 'Exiter Geist Mono', weight: '400', data: b64('geist-mono/GeistMono-Regular.woff2') },
+];
+fs.writeFileSync(path.join(__dirname, '..', 'src', 'theme', 'fonts.json'), JSON.stringify({ faces }));
 console.log('fonts.css written,', Math.round(css.length / 1024), 'KB');
