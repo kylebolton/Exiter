@@ -13,7 +13,7 @@
 
   --radius: 8px;          /* controls */
   --radius-lg: 12px;      /* popovers, dialogs, media, quote cards */
-  --radius-input: var(--radius-lg);  /* every text input: composer, reply, search (moves with the Settings radius) */
+  --radius-input: var(--radius);  /* every text input: composer, reply, search (same value as buttons, so they always match) */
   --shadow-pop: 0 8px 30px rgba(0, 0, 0, 0.12);
   --hover-tint: color-mix(in srgb, var(--muted) 55%, transparent);
 

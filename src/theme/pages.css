@@ -33,3 +33,24 @@ form[role="search"] svg { width: 16px !important; height: 16px !important; color
 
 /* Profile: the banner and avatar scale with the feed width (a 350px banner and 250px avatar on wide windows); cap the header block */
 div:has(> a[href$="/header_photo"]) { max-width: 720px; }
+
+/* ---------- Logged-out / sign-in flow ---------- */
+/* Dialog card: same radius and hairline as every other floating layer */
+[role="dialog"]:has(input) { border-radius: var(--radius-lg) !important; border: 1px solid var(--border) !important; box-shadow: var(--shadow-pop) !important; }
+/* Text fields: X wraps each input in a <label> with a 2px border; make it a single 1px shadcn input */
+[role="dialog"] label:has(input) { border-width: 1px !important; border-radius: var(--radius-input) !important; border-color: var(--border) !important; box-shadow: none !important; transition: border-color 0.12s ease, box-shadow 0.12s ease; }
+[role="dialog"] label:has(input):focus-within { border-color: var(--ring) !important; box-shadow: 0 0 0 2px color-mix(in srgb, var(--ring) 20%, transparent) !important; }
+[role="dialog"] label:has(input) input { font-size: 15px !important; }
+/* Buttons: the full-width pills become 8px-radius shadcn buttons (primary = solid, others outline) */
+[role="dialog"] div[role="button"], [role="dialog"] button > div[role="button"] { border-radius: var(--radius) !important; }
+[role="dialog"] div[role="button"] span, [role="dialog"] button span { font-size: 14px !important; font-weight: 500 !important; }
+[role="dialog"] button[data-testid$="Button"][style*="background-color: rgb(15, 20, 25)"], [role="dialog"] button[style*="rgb(15, 20, 25)"] { background-color: var(--primary) !important; border-radius: var(--radius) !important; }
+[role="dialog"] button[style*="rgb(15, 20, 25)"] * { color: var(--primary-foreground) !important; }
+/* The sign-in buttons are 9999px pills drawn by a div inside each <button>; any wide, button-height div in the dialog gets the control radius */
+[role="dialog"] button > div, [role="dialog"] div:has(> button) > div:not(:has(button)) { border-radius: var(--radius) !important; }
+[role="dialog"] button > div[style*="background-color: rgb(0, 0, 0)"] { background-color: var(--primary) !important; }
+[role="dialog"] button > div[style*="background-color: rgb(0, 0, 0)"] * { color: var(--primary-foreground) !important; }
+[role="dialog"] button > div[style*="background-color: rgb(255, 255, 255)"] { border-color: var(--border) !important; }
+[data-exiter-pill] { border-radius: var(--radius) !important; }
+/* Floating label inside sign-in fields: neutral instead of X blue */
+[role="dialog"] label:has(input) span { color: var(--muted-foreground) !important; font-size: 13px !important; }

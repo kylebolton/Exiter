@@ -14,6 +14,6 @@ html, body { background-color: var(--background) !important; }
 /* In-feed loading: X's spinner and top progress bar use hard-coded Twitter blue; move them to the neutral palette */
 [role="progressbar"] > div[style*="26px"] { width: 20px !important; height: 20px !important; }
 [role="progressbar"] circle:first-child { stroke: var(--border) !important; opacity: 1 !important; }
-[role="progressbar"] circle:last-child { stroke: var(--muted-foreground) !important; }
+[role="progressbar"] circle:last-child { stroke: var(--foreground) !important; }
 [role="progressbar"] circle { stroke-width: 3 !important; }
 [data-testid="progressBar-bar"] { background-color: var(--foreground) !important; }

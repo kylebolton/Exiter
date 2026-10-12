@@ -132,6 +132,14 @@ function uncapColumn() {
   }
 }
 
+/* ---------- Sign-in pills: X draws its 9999px buttons on deeply nested divs; tag them so CSS can give them the control radius ---------- */
+function tagPills() {
+  document.querySelectorAll('[role="dialog"]:has(input) div:not([data-exiter-pill])').forEach((d) => {
+    if (d.offsetWidth < 150 || d.offsetHeight < 30 || d.offsetHeight > 60) return;
+    if (parseFloat(getComputedStyle(d).borderTopLeftRadius) >= 14) d.setAttribute('data-exiter-pill', '1');
+  });
+}
+
 /* ---------- Promoted post hiding ---------- */
 let enabled = true;  // promoted-post hiding, driven by settings.hideAds
 const AD_LABELS = new Set(['Ad', 'Promoted']);
@@ -154,7 +162,7 @@ let queued = false;
 function schedule() {
   if (queued) return;
   queued = true;
-  requestAnimationFrame(() => { queued = false; sweepAds(); sweepIcons(); tagComposerInput(); ensureRefreshButton(); releaseAutofocus(); tagQuoteCards(); clearTimeout(uncapTimer); uncapTimer = setTimeout(uncapColumn, 250); });
+  requestAnimationFrame(() => { queued = false; sweepAds(); sweepIcons(); tagComposerInput(); ensureRefreshButton(); releaseAutofocus(); tagQuoteCards(); tagPills(); clearTimeout(uncapTimer); uncapTimer = setTimeout(uncapColumn, 250); });
 }
 
 window.addEventListener('DOMContentLoaded', () => {

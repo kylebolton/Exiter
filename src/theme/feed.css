@@ -86,3 +86,6 @@ svg[data-exiter-icon] { fill: none !important; stroke: currentColor !important; 
 svg[data-exiter-icon] * { fill: none !important; stroke: currentColor !important; }
 svg[data-exiter-icon="ellipsis"] circle, svg[data-exiter-icon="smile"] line { stroke-width: 2 !important; }
 svg[data-exiter-icon$="-on"], svg[data-exiter-icon$="-on"] path { fill: currentColor !important; }
+button[aria-label^="New posts are available"], button[aria-label^="New posts are available"] * { white-space: nowrap !important; }
+button[aria-label^="New posts are available"] { min-width: 0; width: auto !important; max-width: calc(100vw - 32px); }
+button[aria-label^="New posts are available"] [data-testid="pillLabel"] { overflow: hidden; text-overflow: ellipsis; }
