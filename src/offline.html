@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Exiter</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { --bg:#fff; --fg:#09090b; --mfg:#71717a; --border:#e4e4e7; --primary:#18181b; --pfg:#fafafa; }
+  :root.dark { --bg:#09090b; --fg:#fafafa; --mfg:#a1a1aa; --border:#27272a; --primary:#fafafa; --pfg:#18181b; }
+  * { box-sizing: border-box; }
+  html, body { height:100%; margin:0; background:var(--bg); color:var(--fg); font:14px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif; letter-spacing:-0.011em; -webkit-font-smoothing:antialiased; }
+  body { display:grid; place-items:center; -webkit-app-region:drag; }
+  main { max-width:360px; padding:0 24px; text-align:left; -webkit-app-region:no-drag; }
+  h1 { font-size:18px; font-weight:600; letter-spacing:-0.02em; margin:0 0 6px; }
+  p { margin:0 0 20px; color:var(--mfg); }
+  button { font:inherit; font-weight:500; border:0; border-radius:8px; background:var(--primary); color:var(--pfg); padding:8px 14px; cursor:pointer; }
+  button:hover { opacity:.9; }
+  button:focus-visible { outline:2px solid #a1a1aa; outline-offset:2px; }
+</style>
+</head>
+<body>
+  <main>
+    <h1>Can't reach X</h1>
+    <p>Check your connection. Exiter will retry on its own when you're back online.</p>
+    <button id="retry" type="button">Try again</button>
+  </main>
+  <script>
+    if (new URLSearchParams(location.search).get('dark')) document.documentElement.classList.add('dark');
+    const go = () => { location.href = 'https://x.com/home'; };
+    document.getElementById('retry').addEventListener('click', go);
+    window.addEventListener('online', go);
+    setInterval(() => { if (navigator.onLine) go(); }, 8000);
+  </script>
+</body>
+</html>

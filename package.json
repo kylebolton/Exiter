@@ -1,0 +1,116 @@
+{
+  "name": "exiter",
+  "productName": "Exiter",
+  "version": "0.1.0",
+  "description": "A sleek, reskinned desktop client for X",
+  "main": "src/main.js",
+  "author": "Kyle Bolton <hello@kylebolton.me>",
+  "license": "MIT",
+  "homepage": "https://github.com/kylebolton/Exiter",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dev": "EXITER_DEBUG_PORT=9222 electron .",
+    "icons": "node scripts/make-icons.js",
+    "dist": "electron-builder",
+    "dist:all": "electron-builder --mac --win --linux",
+    "fonts": "node scripts/make-fonts.js",
+    "release:mac": "scripts/release-mac.sh",
+    "release:publish": "scripts/publish-release.sh"
+  },
+  "build": {
+    "appId": "me.kylebolton.exiter",
+    "publish": {
+      "provider": "github",
+      "owner": "kylebolton",
+      "repo": "Exiter"
+    },
+    "artifactName": "Exiter-${version}-${os}-${arch}.${ext}",
+    "productName": "Exiter",
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "package.json",
+      "!**/*.map",
+      "!node_modules/electron-sparkle/dist/Sparkle-*.zip"
+    ],
+    "directories": {
+      "buildResources": "build",
+      "output": "dist"
+    },
+    "mac": {
+      "category": "public.app-category.social-networking",
+      "icon": "build/icon.icns",
+      "identity": "Kyle Bolton (PGQZ368DB6)",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "notarize": false,
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "universal"
+          ]
+        }
+      ],
+      "extendInfo": {
+        "SUFeedURL": "https://github.com/kylebolton/Exiter/releases/latest/download/appcast.xml",
+        "SUPublicEDKey": "xysL+0LuWaFTI48ZU1SadoCzB5iijsn+IV4JTPJ5ouA=",
+        "SUEnableAutomaticChecks": true
+      }
+    },
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "linux": {
+      "icon": "build/icon.png",
+      "category": "Network",
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "maintainer": "Kyle Bolton <hello@kylebolton.me>"
+    },
+    "afterPack": "electron-sparkle/electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^44.7.0",
+    "electron-builder": "^26.15.3",
+    "geist": "^1.7.2"
+  },
+  "dependencies": {
+    "electron-sparkle": "^0.2.0",
+    "electron-store": "^8.2.0",
+    "electron-updater": "^6.8.9"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kylebolton/Exiter.git"
+  }
+}

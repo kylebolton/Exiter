@@ -1,0 +1,35 @@
+/* Per-page touches: Explore, search, profile, notifications, follow buttons */
+
+/* Search input (Explore / search pages) */
+[data-testid="SearchBox_Search_Input"], form[role="search"] > div > div, form[role="search"] > div > div > div {
+  border-radius: var(--radius) !important; background: transparent !important; border-color: var(--border) !important;
+}
+form[role="search"] input { font-size: 14px !important; }
+form[role="search"] svg { width: 16px !important; height: 16px !important; color: var(--muted-foreground) !important; }
+
+/* Follow / Following / Edit profile: 8px-radius buttons instead of pills */
+[data-testid$="-follow"], [data-testid$="-unfollow"], [data-testid="editProfileButton"], [data-testid="userActions"] {
+  border-radius: var(--radius) !important; font-size: 13px !important; font-weight: 500 !important; min-height: 32px !important;
+}
+[data-testid$="-follow"] { background: var(--primary) !important; border-color: var(--primary) !important; }
+[data-testid$="-follow"], [data-testid$="-follow"] * { color: var(--primary-foreground) !important; }
+[data-testid$="-follow"] svg { display: none; }
+
+/* Back button / circular header buttons (profile, post, search) */
+[data-testid="app-bar-back"], [data-testid="app-bar-close"] { border-radius: var(--radius) !important; border: 0 !important; background: transparent !important; }
+[data-testid="app-bar-back"]:hover, [data-testid="app-bar-close"]:hover { background: var(--muted) !important; }
+
+/* Notification type icons: quiet, no heavy fills */
+[data-testid="notification"] svg { width: 20px !important; height: 20px !important; }
+
+/* Thin scrollbars that appear on hover */
+::-webkit-scrollbar { width: 8px; height: 8px; background: transparent; }
+::-webkit-scrollbar-thumb { background: transparent; border-radius: 8px; }
+*:hover::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--foreground) 18%, transparent); }
+::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--foreground) 32%, transparent); }
+
+/* Section and page headings: X's 20px/800 is heavy next to the quiet rows; use shadcn-scale titles */
+[data-testid="primaryColumn"] h2[role="heading"], [data-testid="primaryColumn"] h2[role="heading"] span { font-size: 17px !important; font-weight: 600 !important; letter-spacing: -0.02em; }
+
+/* Profile: the banner and avatar scale with the feed width (a 350px banner and 250px avatar on wide windows); cap the header block */
+div:has(> a[href$="/header_photo"]) { max-width: 720px; }

@@ -1,0 +1,32 @@
+/* Composer: a single bordered input, ghost toolbar buttons, quiet reply chip */
+
+/* preload.js tags the one ancestor of the label that X gives a border; make it a shadcn input */
+[data-exiter-input] {
+  border-width: 1px !important; border-radius: 10px !important; border-color: var(--border) !important;
+  padding-inline: 12px !important; box-sizing: border-box; min-height: 44px; transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+[data-exiter-input]:focus-within { border-color: var(--ring) !important; box-shadow: 0 0 0 2px color-mix(in srgb, var(--ring) 20%, transparent) !important; }
+
+[data-testid="tweetTextarea_0_label"], [data-testid="tweetTextarea_0_label"] *, [data-testid="tweetTextarea_0"], [data-testid="tweetTextarea_0"] * { outline: 0 !important; box-shadow: none !important; }
+[data-testid="tweetTextarea_0_label"]::before, [data-testid="tweetTextarea_0_label"]::after,
+[data-testid="tweetTextarea_0_label"] *::before, [data-testid="tweetTextarea_0_label"] *::after { border: 0 !important; box-shadow: none !important; }
+/* X's placeholder is 20px; keep one text size so typed text and placeholder match */
+[data-testid="tweetTextarea_0_label"] * { font-size: 15px !important; line-height: 22px !important; }
+[data-testid="tweetTextarea_0_label"] .public-DraftEditorPlaceholder-root, [data-testid="tweetTextarea_0_label"] .public-DraftEditorPlaceholder-root * { color: var(--muted-foreground) !important; }
+/* The caret only shows while the box is focused */
+[data-testid="tweetTextarea_0"] { caret-color: transparent !important; }
+[data-exiter-input]:focus-within [data-testid="tweetTextarea_0"] { caret-color: var(--primary) !important; }
+
+/* Toolbar: ghost 32px icon buttons (the inline Post button lives in the same toolbar and keeps its own style) */
+[data-testid="toolBar"] button:not([data-testid="tweetButtonInline"]) {
+  width: 32px !important; height: 32px !important; border: 0 !important; border-radius: var(--radius) !important; background: transparent !important; color: var(--muted-foreground) !important;
+}
+[data-testid="toolBar"] button:not([data-testid="tweetButtonInline"]):hover { background: var(--muted) !important; color: var(--foreground) !important; }
+[data-testid="toolBar"] button:not([data-testid="tweetButtonInline"]) svg { width: 16px !important; height: 16px !important; }
+[data-testid="toolBar"] button[aria-label="Previous"], [data-testid="toolBar"] button[aria-label="Next"] { display: none !important; }
+[data-testid="tweetButtonInline"] { width: auto !important; min-width: 64px !important; padding: 0 16px !important; min-height: 32px !important; height: 32px !important; }
+
+/* Reply-settings chip ("Everyone can reply") */
+button[aria-label*="can reply" i] { margin-left: 16px !important; border: 0 !important; border-radius: var(--radius) !important; padding: 0 8px !important; height: 28px; }
+button[aria-label*="can reply" i], button[aria-label*="can reply" i] * { color: var(--muted-foreground) !important; font-size: 13px !important; font-weight: 500 !important; }
+button[aria-label*="can reply" i]:hover { background: var(--muted) !important; }

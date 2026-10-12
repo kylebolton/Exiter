@@ -1,0 +1,37 @@
+/* Floating layers: menus, popovers, dialogs, hover cards, tooltips. Hairline border, 12px radius, one shadow. */
+
+[role="menu"], [data-testid="Dropdown"], [data-testid="HoverCard"], [role="dialog"] > div {
+  background-color: var(--background) !important; border: 1px solid var(--border) !important; border-radius: var(--radius-lg) !important; box-shadow: var(--shadow-pop) !important; overflow: hidden;
+}
+[role="menu"] [role="menuitem"], [data-testid="Dropdown"] [role="menuitem"] { border-radius: 6px !important; margin: 2px 4px; transition: background-color 0.1s ease; }
+[role="menu"] [role="menuitem"]:hover, [data-testid="Dropdown"] [role="menuitem"]:hover { background: var(--muted) !important; }
+[role="menu"] [role="menuitem"] span, [data-testid="Dropdown"] [role="menuitem"] span { font-size: 14px !important; font-weight: 500 !important; }
+[role="menu"] [role="menuitem"] svg, [data-testid="Dropdown"] [role="menuitem"] svg { width: 16px !important; height: 16px !important; }
+
+/* Dialog backdrop */
+[data-testid="mask"] { background-color: rgba(0, 0, 0, 0.4) !important; backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
+html[data-ex-theme="dark"] [data-testid="mask"] { background-color: rgba(0, 0, 0, 0.65) !important; }
+
+/* Tooltips */
+[role="tooltip"] > div, [role="tooltip"] { border-radius: 6px !important; font-size: 12px !important; }
+
+/* Menu items (account menu, More menu, post menus): soft highlight for keyboard focus instead of the heavy ring, shadcn spacing */
+[role="menuitem"]:focus-visible { outline: 0 !important; background: var(--muted) !important; }
+[role="menuitem"] { border-radius: 6px !important; min-height: 36px; }
+[data-testid="HoverCard"] [role="menuitem"] { margin: 4px; width: calc(100% - 8px); box-sizing: border-box; }
+[data-testid="HoverCard"] [role="menuitem"], [data-testid="HoverCard"] [role="menuitem"] span { font-size: 14px !important; font-weight: 500 !important; }
+[data-testid="HoverCard"] [role="menuitem"]:hover { background: var(--muted) !important; }
+[data-testid="HoverCard"] { padding: 0; }
+
+/* All floating menus (More, account, post "..." menu, share): same 14px/500 labels and 16px icons, 36px rows */
+[role="menuitem"] span, [role="menuitem"] div[dir], [role="menuitem"] > div > div { font-size: 14px !important; font-weight: 500 !important; line-height: 20px !important; }
+[role="menuitem"] svg { width: 16px !important; height: 16px !important; }
+[role="menuitem"] { min-height: 36px; align-items: center; }
+[role="menuitem"] > div { gap: 10px; padding-block: 6px; }
+
+/* The sidebar "More" dropdown is made of links, not menuitems */
+[data-testid="Dropdown"] a[role="link"], [data-testid="Dropdown"] [role="link"] { min-height: 40px !important; height: 40px !important; border-radius: 6px !important; margin: 3px 4px; width: calc(100% - 8px) !important; box-sizing: border-box; transition: background-color 0.1s ease; }
+[data-testid="Dropdown"] a[role="link"]:hover { background: var(--muted) !important; }
+[data-testid="Dropdown"] a[role="link"] span, [data-testid="Dropdown"] a[role="link"] div[dir] { font-size: 14px !important; font-weight: 500 !important; line-height: 20px !important; }
+[data-testid="Dropdown"] a[role="link"] svg { width: 16px !important; height: 16px !important; }
+[data-testid="Dropdown"] a[role="link"] > div { gap: 10px; padding-inline: 8px; }

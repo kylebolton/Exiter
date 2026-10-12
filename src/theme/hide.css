@@ -1,0 +1,46 @@
+/* Clutter hiding, gated by attributes that preload.js sets on <html> from the user's settings.
+   Selectors use data-testid / aria attributes, which change far less than hashed class names. */
+
+/* Entire right column (search, Live on X, news, who to follow, footer) */
+html[data-ex-hide-rail] [data-testid="sidebarColumn"] { display: none !important; }
+
+/* X logo, top left */
+html[data-ex-hide-logo] header[role="banner"] h1 { display: none !important; }
+
+/* Floating Grok / chat dock */
+html[data-ex-hide-floating] [data-testid="GrokDrawer"],
+html[data-ex-hide-floating] [data-testid="chat-drawer-root"] { display: none !important; }
+
+/* Promoted posts and cards (marked by preload.js) */
+html[data-ex-hide-ads] [data-exiter-ad="1"] { display: none !important; }
+
+/* Suggestions: Premium upsells and "Who to follow" modules inside the timeline */
+html[data-ex-hide-suggest] aside[aria-label*="Premium" i],
+html[data-ex-hide-suggest] [data-testid="super-upsell-UpsellCardRenderProperties"],
+html[data-ex-hide-suggest] [data-testid="cellInnerDiv"]:has([data-testid="UserCell"]):has(h2) { display: none !important; }
+
+/* Engagement numbers and view counts */
+html[data-ex-hide-metrics] article [role="group"] span,
+html[data-ex-hide-metrics] article a[href$="/analytics"] { display: none !important; }
+
+/* Composer toolbar extras */
+[data-testid="grokImgGen"], [data-testid="contentDisclosureButton"] { display: none !important; }
+
+/* Sidebar items the user switched off in Settings (data-ex-nav-off="calls history ...") */
+html[data-ex-nav-off~="home"] a[data-testid="AppTabBar_Home_Link"],
+html[data-ex-nav-off~="explore"] a[data-testid="AppTabBar_Explore_Link"],
+html[data-ex-nav-off~="notifications"] a[data-testid="AppTabBar_Notifications_Link"],
+html[data-ex-nav-off~="chat"] a[data-testid="AppTabBar_DirectMessage_Link"],
+html[data-ex-nav-off~="profile"] a[data-testid="AppTabBar_Profile_Link"],
+html[data-ex-nav-off~="more"] button[data-testid="AppTabBar_More_Menu"],
+html[data-ex-nav-off~="bookmarks"] nav a[href="/i/bookmarks"],
+html[data-ex-nav-off~="lists"] nav a[href$="/lists"],
+html[data-ex-nav-off~="communities"] nav a[href*="/communities"],
+html[data-ex-nav-off~="calls"] a[data-testid="AppTabBar_Calls_Link"],
+html[data-ex-nav-off~="history"] nav a[href="/i/history"],
+html[data-ex-nav-off~="articles"] nav a[href="/compose/articles"],
+html[data-ex-nav-off~="premium"] nav a[data-testid="premium-hub-tab"],
+html[data-ex-nav-off~="premium"] nav a[href="/i/verified-orgs-signup"],
+html[data-ex-nav-off~="grok"] nav a[href="/i/grok"],
+html[data-ex-nav-off~="creator"] nav a[aria-label="Creator Studio"],
+html[data-ex-nav-off~="jobs"] nav a[href*="/jobs"] { display: none !important; }

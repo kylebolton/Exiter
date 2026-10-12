@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#101026"/>
+      <stop offset="0.5" stop-color="#06060f"/>
+      <stop offset="1" stop-color="#000000"/>
+    </linearGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.06"/><stop offset="0.45" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="rim" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.42"/>
+      <stop offset="0.35" stop-color="#ffffff" stop-opacity="0.10"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0.04"/>
+    </linearGradient>
+    <linearGradient id="aEdge" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8bf0ff"/><stop offset="0.5" stop-color="#9aa2ff"/><stop offset="1" stop-color="#d3a5ff"/>
+    </linearGradient>
+    <linearGradient id="aFill" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#14d0f2"/><stop offset="0.5" stop-color="#5b5ff0"/><stop offset="1" stop-color="#a24cf2"/>
+    </linearGradient>
+    <linearGradient id="bFill" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#d6dcff"/>
+    </linearGradient>
+    <filter id="glowWide" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="22"/></filter>
+    <filter id="glowTight" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="7"/></filter>
+    <filter id="tileGlow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="26"/></filter>
+    <clipPath id="tile"><rect x="64" y="64" width="896" height="896" rx="204"/></clipPath>
+    <mask id="onA"><path d="M320 320 L704 704" stroke="#fff" stroke-width="92" stroke-linecap="round" fill="none"/></mask>
+  </defs>
+
+  <!-- faint halo around the tile -->
+  <rect x="64" y="64" width="896" height="896" rx="204" fill="#6d5dfc" opacity="0.32" filter="url(#tileGlow)"/>
+
+  <!-- tile -->
+  <rect x="64" y="64" width="896" height="896" rx="204" fill="url(#bg)"/>
+  <rect x="64" y="64" width="896" height="896" rx="204" fill="url(#sheen)"/>
+
+  <!-- glow behind the X: wide + tight -->
+  <g opacity="0.38" filter="url(#glowWide)" fill="none" stroke-linecap="round">
+    <path d="M320 320 L704 704" stroke="#5b6cff" stroke-width="96"/>
+    <path d="M704 320 L320 704" stroke="#9fb3ff" stroke-width="96"/>
+  </g>
+  <g opacity="0.45" filter="url(#glowTight)" fill="none" stroke-linecap="round">
+    <path d="M320 320 L704 704" stroke="#7a82ff" stroke-width="88"/>
+    <path d="M704 320 L320 704" stroke="#cfd8ff" stroke-width="88"/>
+  </g>
+
+  <!-- stroke A (under): bevelled edge + saturated fill -->
+  <g fill="none" stroke-linecap="round">
+    <path d="M320 320 L704 704" stroke="url(#aEdge)" stroke-width="84"/>
+    <path d="M320 320 L704 704" stroke="url(#aFill)" stroke-width="76"/>
+  </g>
+
+  <!-- over/under: a dark gap where stroke B passes over A -->
+  <path d="M704 320 L320 704" stroke="#08081a" stroke-width="98" stroke-linecap="round" fill="none" mask="url(#onA)"/>
+
+  <!-- stroke B (over) -->
+  <g fill="none" stroke-linecap="round">
+    <path d="M704 320 L320 704" stroke="#ffffff" stroke-width="84"/>
+    <path d="M704 320 L320 704" stroke="url(#bFill)" stroke-width="77"/>
+  </g>
+
+  <!-- crisp rim light on the tile edge -->
+  <rect x="65.500" y="65.500" width="893" height="893" rx="203" fill="none" stroke="url(#rim)" stroke-width="3"/>
+</svg>

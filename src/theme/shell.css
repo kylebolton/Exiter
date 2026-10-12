@@ -1,0 +1,52 @@
+/* Shell: typography base, sidebar / rail / feed layout. One place for every width and offset. */
+
+/* ---------- Base ---------- */
+html, body, #react-root { font-family: var(--ex-font) !important; letter-spacing: -0.011em; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+html[data-ex-font] #react-root *:not(svg):not(svg *) { font-family: var(--ex-font) !important; }
+html[data-ex-theme="dark"] body, html[data-ex-theme="dark"] #react-root { background-color: var(--background) !important; }
+html[data-ex-theme="dark"] [style*="background-color: rgb(0, 0, 0)"] { background-color: var(--background) !important; }
+/* clip, not hidden: overflow-x:hidden makes <body> its own scroll container, so the window never scrolls and X's scroll-driven loading/refresh stops working */
+html, body { overflow-x: clip !important; }
+body::-webkit-scrollbar { display: none; }
+::selection { background: color-mix(in srgb, var(--ring) 45%, transparent); }
+
+/* Keyboard focus: a visible 2px ring everywhere X suppresses it */
+a:focus-visible, button:focus-visible, [role="button"]:focus-visible, [role="tab"]:focus-visible, [role="link"]:focus-visible, [role="menuitem"]:focus-visible {
+  outline: 2px solid var(--ring) !important; outline-offset: 2px !important; border-radius: var(--radius);
+}
+
+/* ---------- Layout: sidebar pinned left, feed fills the rest ---------- */
+div:has(> header[role="banner"]) { max-width: none !important; width: 100% !important; margin: 0 !important; justify-content: flex-start !important; }
+header[role="banner"] { flex: 0 0 var(--sidebar-w) !important; width: var(--sidebar-w) !important; }
+header[role="banner"] > div { width: var(--sidebar-w) !important; padding: 0 14px !important; box-sizing: border-box; }
+
+main[role="main"] { flex: 1 1 auto !important; width: auto !important; min-width: 0 !important; max-width: none !important; }
+main[role="main"] > div, main[role="main"] > div > div, div:has(> [data-testid="primaryColumn"]) {
+  flex: 1 1 auto !important; width: 100% !important; max-width: none !important; justify-content: flex-start !important;
+}
+[data-testid="primaryColumn"] {
+  flex: 1 1 auto !important; width: 100% !important; max-width: none !important;
+  border-left: 1px solid var(--border) !important; border-right: 0 !important; min-height: 100vh;
+}
+[data-testid="primaryColumn"] * { border-color: var(--border) !important; }
+/* ...but never reveal borders X draws invisibly (transparent inline colour, the editor container) */
+.DraftEditor-editorContainer, [style*="border-color: rgba(0, 0, 0, 0)"], [style*="border-color: transparent"] { border-color: transparent !important; }
+
+/* X caps several wrappers at 600px, at a different depth per page. preload.js tags them with data-exiter-free; the rest are known paths */
+[data-exiter-free], [data-testid="primaryColumn"] [aria-label*="imeline" i] > div, [data-testid="primaryColumn"] [aria-label="Home timeline"] > div > div > div { max-width: none !important; width: 100% !important; }
+
+/* Feed width setting */
+html[data-ex-feed="medium"] main[role="main"] { flex: 0 1 760px !important; margin-inline: auto !important; }
+html[data-ex-feed="narrow"] main[role="main"] { flex: 0 1 600px !important; margin-inline: auto !important; }
+
+/* ---------- Icon rail: X collapses the nav to icons below ~1260px (and on Chat); shrink the sidebar to match ---------- */
+header[role="banner"]:not(:has(nav a span)) { flex-basis: var(--rail-w) !important; width: var(--rail-w) !important; }
+header[role="banner"]:not(:has(nav a span)) > div { width: var(--rail-w) !important; align-items: center !important; }
+/* X nests the nav in a position:fixed wrapper with an inline left offset sized for its own layout, plus its own padding; pin and flatten it */
+header[role="banner"]:not(:has(nav a span)) > div > div { left: 0 !important; width: var(--rail-w) !important; max-width: var(--rail-w) !important; align-items: center !important; }
+header[role="banner"]:not(:has(nav a span)) > div > div > div { width: var(--rail-w) !important; align-items: center !important; }
+header[role="banner"]:not(:has(nav a span)) > div, header[role="banner"]:not(:has(nav a span)) div { padding-left: 0 !important; padding-right: 0 !important; }
+
+/* ---------- Titlebar: hidden inset on macOS, so the top strip drags the window ---------- */
+body::before { content: ""; position: fixed; top: 0; left: 0; right: 0; height: 14px; -webkit-app-region: drag; z-index: 2147483647; }
+a, button, input, textarea, [role="button"], [role="link"], [contenteditable] { -webkit-app-region: no-drag; }

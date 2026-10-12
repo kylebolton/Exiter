@@ -1,0 +1,80 @@
+/* Feed: sticky header + tabs, post rows, actions, media */
+
+/* Sticky headers: X's translucent inline background lets content ghost through; make it near-solid with a light blur */
+[data-testid="primaryColumn"] div[style*="rgba(255, 255, 255, 0.85)"], [data-testid="primaryColumn"] div[style*="rgba(0, 0, 0, 0.65)"] {
+  background-color: color-mix(in srgb, var(--background) 94%, transparent) !important;
+  backdrop-filter: blur(12px) !important; -webkit-backdrop-filter: blur(12px) !important;
+}
+
+/* ---------- Tabs (underline variant) ---------- */
+[role="tab"] span, [role="tab"] div[dir] { font-size: 14px !important; font-weight: 500 !important; }
+[role="tab"][aria-selected="false"] span, [role="tab"][aria-selected="false"] div[dir] { color: var(--muted-foreground) !important; }
+[role="tab"]:hover { background: var(--hover-tint) !important; }
+[role="tab"] div[style*="background-color"] { background: var(--foreground) !important; height: 2px !important; border-radius: 0 !important; }
+
+/* Header icon buttons: "+" (manage timelines) and our refresh button */
+button[aria-label="Manage timelines"], button[data-exiter-refresh] {
+  width: 32px !important; height: 32px !important; border: 0 !important; border-radius: var(--radius) !important; background: transparent !important;
+  color: var(--muted-foreground) !important; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;
+}
+button[aria-label="Manage timelines"]:hover, button[data-exiter-refresh]:hover { background: var(--muted) !important; color: var(--foreground) !important; }
+button[aria-label="Manage timelines"] svg, button[data-exiter-refresh] svg { width: 16px !important; height: 16px !important; }
+button[data-exiter-refresh] svg { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+button[data-exiter-refresh][data-spinning] svg { animation: ex-spin 0.7s ease-in-out; }
+@keyframes ex-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { button[data-exiter-refresh][data-spinning] svg { animation: none; } }
+
+/* The header action container X gives the "+" is a column; make it a row so refresh sits beside it */
+[data-exiter-hdr-actions] { flex-direction: row !important; width: auto !important; align-items: center !important; padding-right: 8px; gap: 2px; }
+
+/* "New posts" pill: shadcn secondary button */
+button[aria-label^="New posts are available"] {
+  background: var(--foreground) !important; color: var(--background) !important; border: 0 !important; border-radius: 999px !important; box-shadow: var(--shadow-pop) !important;
+}
+button[aria-label^="New posts are available"] * { color: var(--background) !important; font-size: 13px !important; font-weight: 500 !important; }
+
+/* ---------- Post rows (hairline-divided, not cards) ---------- */
+article[data-testid="tweet"] { transition: background-color 0.12s ease; }
+[data-testid="cellInnerDiv"]:hover article[data-testid="tweet"] { background: var(--hover-tint); }
+article [data-testid="tweetText"] { font-size: var(--ex-font-size); line-height: var(--ex-leading) !important; }
+article [data-testid="User-Name"] { font-size: 14px; }
+article [data-testid="User-Name"] a:first-child span { font-weight: 600; }
+article time, article [data-testid="User-Name"] [dir="ltr"] { font-variant-numeric: tabular-nums; }
+article [data-testid^="UserAvatar-Container"] img { box-shadow: 0 0 0 1px var(--border); }
+[data-testid="tweet-text-show-more-link"], [data-testid="tweet-text-show-more-link"] span { color: var(--muted-foreground) !important; text-decoration: underline; text-underline-offset: 2px; }
+a[href^="/hashtag"], [data-testid="tweetText"] a { color: var(--foreground) !important; text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--foreground) 30%, transparent); text-underline-offset: 2px; }
+
+/* Media + quote cards: one radius, one hairline, capped width (preload.js tags the quote-card border box) */
+article [data-testid="tweetPhoto"], article [data-testid="videoPlayer"], article [data-testid="card.wrapper"] { border-radius: var(--radius-lg) !important; overflow: hidden; }
+article div:has(> [data-testid="card.wrapper"]), article div:has(> [data-testid="tweetPhoto"]), article div:has(> div > [data-testid="tweetPhoto"]),
+article div:has(> [data-testid="videoPlayer"]), article div:has(> div > [data-testid="videoPlayer"]), [data-exiter-cap] { max-width: var(--media-max) !important; }
+
+/* Action row: Lucide icons (swapped in by preload.js), ghost hover, tabular counts */
+article [role="group"] button, article [role="group"] a { color: var(--muted-foreground) !important; }
+article [role="group"] button svg, article [role="group"] a svg { width: 16px !important; height: 16px !important; }
+article [role="group"] span { font-size: 12px !important; color: var(--muted-foreground) !important; font-variant-numeric: tabular-nums; }
+article [role="group"] button:hover, article [role="group"] a:hover { color: var(--foreground) !important; }
+article [role="group"] button > div > div:first-child, article [role="group"] a > div > div:first-child { background: transparent !important; }
+article [role="group"] button:hover > div > div:first-child { background: var(--muted) !important; }
+[data-testid="unlike"] { color: var(--destructive) !important; }
+[data-testid="removeBookmark"], [data-testid="unretweet"] { color: var(--foreground) !important; }
+
+html[data-ex-density="compact"] article [data-testid="tweetText"] { line-height: 1.4 !important; }
+html[data-ex-density="compact"] article[data-testid="tweet"] { zoom: 0.94; }
+
+/* Handle + timestamp row: smaller than the name, muted, and it shrinks/truncates instead of wrapping or overflowing */
+article [data-testid="User-Name"] > div:nth-child(2) { min-width: 0; font-size: 13px; }
+article [data-testid="User-Name"] > div:nth-child(2) div { min-width: 0; }
+article [data-testid="User-Name"] > div:nth-child(2) span, article [data-testid="User-Name"] > div:nth-child(2) time { font-size: 13px !important; color: var(--muted-foreground) !important; }
+article [data-testid="User-Name"] > div:nth-child(2) [dir="ltr"] { overflow: hidden; text-overflow: ellipsis; }
+
+/* Capitalised usernames (Settings > Text): "names" = display names; "all" = names and @handles. The timestamp is left alone. */
+html[data-ex-caps="names"] article [data-testid="User-Name"] > div:first-child span { text-transform: uppercase; letter-spacing: 0.03em; font-size: 0.92em; }
+html[data-ex-caps="all"] article [data-testid="User-Name"] > div:first-child span { text-transform: uppercase; letter-spacing: 0.03em; font-size: 0.92em; }
+html[data-ex-caps="all"] article [data-testid="User-Name"] > div:nth-child(2) span:not(:has(time)):not(a:has(time) span) { text-transform: uppercase; letter-spacing: 0.02em; }
+
+/* Lucide icons swapped in by preload.js: thin strokes */
+svg[data-exiter-icon] { fill: none !important; stroke: currentColor !important; stroke-width: 1.5 !important; stroke-linecap: round; stroke-linejoin: round; overflow: visible; }
+svg[data-exiter-icon] * { fill: none !important; stroke: currentColor !important; }
+svg[data-exiter-icon="ellipsis"] circle, svg[data-exiter-icon="smile"] line { stroke-width: 2 !important; }
+svg[data-exiter-icon$="-on"], svg[data-exiter-icon$="-on"] path { fill: currentColor !important; }
