@@ -25,6 +25,11 @@
   --ex-leading: 1.55;
   --media-max: 620px;
 
+  --ex-ease: cubic-bezier(0.2, 0.8, 0.2, 1);   /* motion: one curve, three speeds */
+  --ex-dur-fast: 0.12s;
+  --ex-dur: 0.2s;
+  --ex-dur-slow: 0.32s;
+
   --font-sans: "Exiter Geist", "Geist", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
   --font-mono: "Exiter Geist Mono", "Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   --ex-font: var(--font-sans);

@@ -41,7 +41,7 @@ html[data-ex-theme="dark"] [data-testid="mask"] { background-color: rgba(0, 0, 0
    and animating `transform` itself would knock them out of place for the length of the animation. */
 @keyframes ex-pop { from { opacity: 0; translate: 0 -4px; scale: 0.98; } }
 @keyframes ex-fade { from { opacity: 0; } }
-[data-testid="Dropdown"], [data-testid="HoverCard"], [role="menu"] { animation: ex-pop 0.12s ease-out; transform-origin: top; }
+[data-testid="Dropdown"], [data-testid="HoverCard"], [role="menu"] { animation: ex-pop 0.12s var(--ex-ease); transform-origin: top; }
 [role="dialog"] > div { animation: ex-pop 0.14s ease-out; }
 [data-testid="mask"] { animation: ex-fade 0.14s ease-out; }
 @media (prefers-reduced-motion: reduce) {

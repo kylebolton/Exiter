@@ -1,0 +1,101 @@
+/* Search: the input (Explore / search page) and X's typeahead dropdown.
+   DOM: form[role=search] > div:first-child (input) + div:nth-child(2) (0-height anchor) > div (dropdown) > [role=listbox] */
+
+/* X nests two bordered boxes (44px + 42px) = a doubled stroke. Keep one hairline on the outer box, none on the inner. */
+form[role="search"] > div:first-child > div {
+  border: 1px solid var(--border) !important; border-radius: var(--radius-input) !important; background: transparent !important;
+  transition: border-color var(--ex-dur-fast) var(--ex-ease), box-shadow var(--ex-dur-fast) var(--ex-ease);
+}
+form[role="search"] > div:first-child > div > div { border: 0 !important; border-radius: calc(var(--radius-input) - 1px) !important; background: transparent !important; box-shadow: none !important; }
+form[role="search"] > div:first-child > div:hover { border-color: color-mix(in srgb, var(--ring) 70%, var(--border)) !important; }
+/* Focus: X paints it in its blue; use a soft neutral ring */
+form[role="search"]:focus-within > div:first-child > div { border-color: var(--ring) !important; box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 16%, transparent) !important; }
+form[role="search"] input { font-size: 14px !important; font-weight: 400 !important; letter-spacing: -0.006em; color: var(--foreground) !important; caret-color: var(--foreground); }
+form[role="search"] input::placeholder { color: var(--muted-foreground) !important; }
+form[role="search"] svg { width: 16px !important; height: 16px !important; color: var(--muted-foreground) !important; }
+form[role="search"]:focus-within [data-testid="SearchBox_Search_Input_label"] svg { color: var(--foreground) !important; }
+form[role="search"] [data-testid="clearButton"], form[role="search"] [data-testid="clearButton"] > div { background: transparent !important; }
+
+/* Dropdown: a real popover surface (it used to inherit the transparent input styling) */
+form[role="search"] > div:nth-child(2) { z-index: 20; }
+form[role="search"] > div:nth-child(2) > div {
+  margin-top: 6px; background: var(--background) !important; color: var(--foreground);
+  border: 1px solid var(--border) !important; border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-pop) !important; overflow: hidden; max-height: min(70vh, 520px); overflow-y: auto;
+  animation: ex-pop var(--ex-dur-fast) var(--ex-ease); transform-origin: top;
+}
+form[role="search"] [role="listbox"] { padding: 6px; }
+form[role="search"] [role="listbox"] *, form[role="search"] [role="listbox"] a, form[role="search"] [role="listbox"] button { color: var(--foreground); }
+
+/* "Recent" + "Clear all" header: small muted label, neutral action */
+[data-testid="typeaheadRecentSearchesHeader"] { height: auto !important; min-height: 0 !important; padding: 6px 8px 4px !important; align-items: center; }
+[data-testid="typeaheadRecentSearchesHeader"] span, [data-testid="typeaheadRecentSearchesHeader"] div[dir] {
+  font-size: 12px !important; font-weight: 500 !important; line-height: 20px !important; color: var(--muted-foreground) !important;
+}
+[data-testid="typeaheadRecentSearchesHeader"] button { border-radius: var(--radius) !important; padding: 0 8px !important; transition: background-color var(--ex-dur-fast) var(--ex-ease); }
+[data-testid="typeaheadRecentSearchesHeader"] button:hover { background: var(--muted) !important; }
+[data-testid="typeaheadRecentSearchesHeader"] button span { color: var(--foreground) !important; font-weight: 500 !important; }
+
+/* Rows: queries, people, topics */
+[data-testid="typeaheadRecentSearchesItem"], [data-testid="typeaheadResult"], [data-testid="TypeaheadUser"], [role="listbox"] [role="option"] {
+  border-radius: var(--radius) !important; transition: background-color var(--ex-dur-fast) var(--ex-ease);
+}
+[data-testid="typeaheadRecentSearchesItem"]:hover, [data-testid="typeaheadResult"]:hover, [data-testid="TypeaheadUser"]:hover, [role="listbox"] [role="option"]:hover,
+[role="listbox"] [role="option"][aria-selected="true"] { background: var(--muted) !important; }
+form[role="search"] [role="listbox"] [role="option"] { padding-block: 2px; }
+form[role="search"] [role="option"] [dir="ltr"], form[role="search"] [role="option"] span { font-size: 14px !important; font-weight: 400; letter-spacing: -0.006em; line-height: 20px !important; }
+form[role="search"] [data-testid="typeaheadResult"] > div:not(:has([data-testid="TypeaheadUser"])) span { font-weight: 500; }
+form[role="search"] [role="option"] [data-testid="UserCell"] span:nth-of-type(n+2), form[role="search"] [role="option"] a span + span { color: var(--muted-foreground) !important; }
+form[role="search"] [role="option"] [data-testid^="UserAvatar-Container"] { width: 32px !important; height: 32px !important; }
+form[role="search"] [role="option"] [data-testid^="UserAvatar-Container"] > div, form[role="search"] [role="option"] [data-testid^="UserAvatar-Container"] img { width: 32px !important; height: 32px !important; }
+/* the row's leading magnifier and trailing remove (x) */
+form[role="search"] [role="option"] svg { color: var(--muted-foreground) !important; }
+form[role="search"] [role="option"] [role="button"], form[role="search"] [role="option"] button:not([data-testid="UserCell"]) { border-radius: var(--radius) !important; background: transparent !important; }
+form[role="search"] [role="option"] [role="button"]:hover, form[role="search"] [role="option"] button:not([data-testid="UserCell"]):hover { background: var(--border) !important; }
+
+/* Denser rows: 12px/16px padding made each person 69px tall */
+form[role="search"] [data-testid="TypeaheadUser"] { padding: 8px 10px !important; background: transparent !important; }
+form[role="search"] [data-testid="TypeaheadUser"] [dir="ltr"] span { font-weight: 500; }
+form[role="search"] [data-testid="TypeaheadUser"] [dir="ltr"]:only-child, form[role="search"] [data-testid="TypeaheadUser"] [dir="ltr"]:only-child span { color: var(--muted-foreground) !important; font-weight: 400 !important; font-size: 13px !important; }
+/* Suggested queries: compact row, thin muted magnifier, typed part medium weight, completion regular */
+form[role="search"] [data-testid="typeaheadResult"] > button > div { padding: 8px 10px !important; }
+form[role="search"] [data-testid="typeaheadResult"] > button > div > div { height: auto !important; align-items: center; }
+form[role="search"] [data-testid="typeaheadResult"] > button > div > div > div:first-child { height: auto !important; margin-right: 10px !important; }
+form[role="search"] [data-testid="typeaheadResult"] > button svg { width: 16px !important; height: 16px !important; }
+form[role="search"] [data-testid="typeaheadResult"] > button svg * { stroke: var(--muted-foreground) !important; fill: var(--muted-foreground) !important; }
+form[role="search"] [data-testid="typeaheadResult"] > button span:first-child { font-weight: 500; }
+form[role="search"] [data-testid="TypeaheadUser"] [dir="ltr"] span:has(svg) { display: inline-flex; }
+form[role="search"] [data-testid="typeaheadResult"] { padding-block: 0; }
+
+@media (prefers-reduced-motion: reduce) { form[role="search"] > div:nth-child(2) > div { animation: none; } }
+
+/* ---------- Explore + search results pages ---------- */
+/* Section headings ("Today's News", "Who to follow"): same scale as the rest of the app, not X's 20px/800 */
+[data-testid="primaryColumn"] [data-testid="cellInnerDiv"] h2[role="heading"] > div, [data-testid="primaryColumn"] [data-testid="cellInnerDiv"] h2[role="heading"] span {
+  font-size: 15px !important; line-height: 22px !important; font-weight: 600 !important; letter-spacing: -0.011em;
+}
+/* Trends and news: weight 600 (X ships 700-800), muted meta lines at 12-13px */
+[data-testid="trend"] [class*="r-b88u0q"], [data-testid="trend"] [class*="r-b88u0q"] span { font-weight: 600 !important; letter-spacing: -0.006em; }
+[data-testid="trend"]:not(:has([data-testid="caret"])) [class*="r-b88u0q"], [data-testid="trend"]:not(:has([data-testid="caret"])) [class*="r-b88u0q"] span {
+  font-size: 15px !important; line-height: 21px !important;
+}
+[data-testid="trend"] span { font-variant-numeric: tabular-nums; }
+[data-testid="trend"] [class*="r-b88u0q"] ~ div span, [data-testid="trend"] [class*="r-b88u0q"] ~ div div { font-size: 13px !important; color: var(--muted-foreground) !important; }
+[data-testid="trend"] > div { transition: background-color var(--ex-dur-fast) var(--ex-ease); }
+[data-testid="trend"]:hover { background: var(--hover-tint) !important; }
+[data-testid="trend"] button[data-testid="caret"] { border-radius: var(--radius) !important; }
+[data-testid="trend"] button[data-testid="caret"]:hover { background: var(--muted) !important; }
+[data-testid="trend"] button[data-testid="caret"] svg { color: var(--muted-foreground) !important; }
+
+/* Explore tabs row + search results tabs: hairline under the header, subdued inactive labels */
+[data-testid="ScrollSnap-List"] a[role="tab"] { transition: color var(--ex-dur-fast) var(--ex-ease); }
+
+/* "Who to follow", "People" results: name 600, handle muted, bio at 14px */
+[data-testid="UserCell"] [data-testid^="UserAvatar-Container"] { box-shadow: 0 0 0 1px var(--border); border-radius: 50%; }
+[data-testid="UserCell"] [class*="r-b88u0q"], [data-testid="UserCell"] [class*="r-b88u0q"] span { font-weight: 600 !important; letter-spacing: -0.006em; }
+[data-testid="UserCell"] [data-testid="UserDescription"], [data-testid="UserCell"] [data-testid="UserDescription"] span { font-size: 14px !important; line-height: 20px !important; color: var(--foreground) !important; }
+[data-testid="UserCell"]:hover { background: var(--hover-tint); }
+[data-testid="UserCell"] { transition: background-color var(--ex-dur-fast) var(--ex-ease); }
+
+/* Show more / See more links: neutral, underlined on hover only */
+[data-testid="primaryColumn"] a[href$="/i/trending"], [data-testid="primaryColumn"] a[href^="/i/connect"], [data-testid="primaryColumn"] [data-testid="cellInnerDiv"] a[role="link"][href*="who_to_follow"] span { color: var(--muted-foreground) !important; }

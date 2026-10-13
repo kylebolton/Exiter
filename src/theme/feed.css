@@ -32,8 +32,9 @@ button[aria-label^="New posts are available"] {
   height: 36px !important; padding: 0 14px 0 12px !important; box-sizing: border-box;
   background: var(--background) !important; color: var(--foreground) !important;
   border: 1px solid var(--border) !important; border-radius: var(--radius-lg) !important;
-  box-shadow: var(--shadow-pop) !important; cursor: pointer; transition: background-color 0.12s ease;
+  box-shadow: var(--shadow-pop) !important; cursor: pointer; transition: background-color var(--ex-dur-fast) var(--ex-ease), transform var(--ex-dur-fast) var(--ex-ease), box-shadow var(--ex-dur-fast) var(--ex-ease);
 }
+button[aria-label^="New posts are available"]:active { transform: scale(0.97); }
 button[aria-label^="New posts are available"]:hover { background: var(--muted) !important; }
 button[aria-label^="New posts are available"] > div { display: flex !important; align-items: center !important; gap: 8px; }
 button[aria-label^="New posts are available"] svg { width: 16px !important; height: 16px !important; color: var(--foreground) !important; }
@@ -88,4 +89,10 @@ svg[data-exiter-icon="ellipsis"] circle, svg[data-exiter-icon="smile"] line { st
 svg[data-exiter-icon$="-on"], svg[data-exiter-icon$="-on"] path { fill: currentColor !important; }
 button[aria-label^="New posts are available"], button[aria-label^="New posts are available"] * { white-space: nowrap !important; }
 button[aria-label^="New posts are available"] { min-width: 0; width: auto !important; max-width: calc(100vw - 32px); }
-button[aria-label^="New posts are available"] [data-testid="pillLabel"] { overflow: hidden; text-overflow: ellipsis; }
+button[aria-label^="New posts are available"] [data-testid="pillLabel"] { overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+/* "Show 35 posts" variant: X puts the new posters' avatars in the pill; make them a tidy overlapped stack */
+button[aria-label^="New posts are available"] [data-testid^="UserAvatar-Container"], button[aria-label^="New posts are available"] img { width: 20px !important; height: 20px !important; min-width: 0 !important; border-radius: 50% !important; }
+button[aria-label^="New posts are available"] [data-testid^="UserAvatar-Container"] { box-shadow: 0 0 0 2px var(--background); margin-right: -6px; }
+button[aria-label^="New posts are available"] [data-testid^="UserAvatar-Container"]:last-of-type { margin-right: 0; }
+button[aria-label^="New posts are available"] [data-testid^="UserAvatar-Container"] > div, button[aria-label^="New posts are available"] [data-testid^="UserAvatar-Container"] > div > div { width: 20px !important; height: 20px !important; padding: 0 !important; }
+button[aria-label^="New posts are available"]:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }

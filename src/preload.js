@@ -158,11 +158,57 @@ function sweepAds() {
   });
 }
 
+/* ---------- Route + pill tracking ---------- */
+let lastHref = location.href;
+let routeTimer = null;
+let saveTimer = null;
+const NO_RESTORE = /^\/(login|logout|i\/flow|i\/oauth2|compose|settings|account|intent)(\/|$)/;
+function trackRoute() {
+  if (location.href === lastHref) return;
+  lastHref = location.href;
+  const root = document.documentElement;
+  root.setAttribute('data-ex-route-anim', '');
+  clearTimeout(routeTimer);
+  routeTimer = setTimeout(() => root.removeAttribute('data-ex-route-anim'), 300);
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    const route = location.pathname + location.search;
+    if (location.host === 'x.com' && !NO_RESTORE.test(location.pathname) && route.length < 200) ipcRenderer.send('exiter:route', route);
+  }, 800);
+}
+let lastPill = '';
+function tickPill() {
+  const pill = document.querySelector('button[aria-label^="New posts are available"]');
+  const label = pill ? (pill.textContent || '').trim() : '';
+  if (label && lastPill && label !== lastPill) {
+    pill.setAttribute('data-ex-tick', '');
+    setTimeout(() => pill.removeAttribute('data-ex-tick'), 260);
+  }
+  lastPill = label;
+}
+
+/* Sidebar links fire on pointer-down, not on release: ~80ms sooner, and the following click is swallowed so the route isn't entered twice */
+let synthClick = false;
+let swallow = null;
+document.addEventListener('pointerdown', (e) => {
+  if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+  const a = e.target.closest && e.target.closest('nav a[role="link"][href^="/"]');
+  if (!a) return;
+  synthClick = true; a.click(); synthClick = false;
+  swallow = a;
+  setTimeout(() => { swallow = null; }, 600);
+}, true);
+document.addEventListener('click', (e) => {
+  if (synthClick) return;
+  const a = e.target.closest && e.target.closest('nav a[role="link"]');
+  if (a && a === swallow) { swallow = null; e.preventDefault(); e.stopPropagation(); }
+}, true);
+
 let queued = false;
 function schedule() {
   if (queued) return;
   queued = true;
-  requestAnimationFrame(() => { queued = false; sweepAds(); sweepIcons(); tagComposerInput(); ensureRefreshButton(); releaseAutofocus(); tagQuoteCards(); tagPills(); clearTimeout(uncapTimer); uncapTimer = setTimeout(uncapColumn, 250); });
+  requestAnimationFrame(() => { queued = false; sweepAds(); sweepIcons(); tagComposerInput(); ensureRefreshButton(); releaseAutofocus(); tagQuoteCards(); tagPills(); trackRoute(); tickPill(); clearTimeout(uncapTimer); uncapTimer = setTimeout(uncapColumn, 250); });
 }
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -241,21 +287,44 @@ if (location.protocol !== 'file:') {
 }
 
 /* ---------- Timeline refresh ---------- */
+// One refresh at a time. It finishes when the first post actually changes (or after 2.5s), then eases back to the top.
+let refreshing = false;
+const firstPostKey = () => {
+  const a = document.querySelector('[data-testid="primaryColumn"] article');
+  const t = a && a.querySelector('time');
+  return a ? ((t && t.parentElement && t.parentElement.getAttribute('href')) || a.textContent.slice(0, 80)) : '';
+};
 function refreshTimeline() {
-  const btn = document.querySelector('button[data-exiter-refresh]');
-  if (btn) { btn.setAttribute('data-spinning', ''); setTimeout(() => btn.removeAttribute('data-spinning'), 800); }
+  if (refreshing) return;
+  refreshing = true;
+  const spin = (on) => { const b = document.querySelector('button[data-exiter-refresh]'); if (b) on ? b.setAttribute('data-spinning', '') : b.removeAttribute('data-spinning'); };
+  spin(true);
+  const before = firstPostKey();
+  let done = false;
+  let obs = null;
+  let cap = null;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    if (obs) obs.disconnect();
+    clearTimeout(cap);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => { refreshing = false; spin(false); }, 350);
+  };
   const pill = document.querySelector('button[aria-label^="New posts are available"]');
+  const onHome = location.pathname === '/home';
+  const tab = document.querySelector('[role="tab"][aria-selected="true"]');
+  if (!pill && !onHome && !tab) { refreshing = false; spin(false); ipcRenderer.send('exiter:reload-page'); return; }
+  obs = new MutationObserver(() => { if (firstPostKey() !== before) finish(); });
+  obs.observe(document.body, { childList: true, subtree: true });
+  cap = setTimeout(finish, 2500);
   if (pill) { pill.click(); return; }
-  if (location.pathname === '/home') {
-    // X reloads the timeline on its own "." shortcut, but only for trusted key events, so the main process sends a real one.
-    // Skip it while the user is typing so a "." never lands in the composer.
-    window.scrollTo(0, 0);
-    const a = document.activeElement;
-    if (a && a !== document.body && a.closest && a.closest('[contenteditable="true"], input, textarea')) a.blur();
-    setTimeout(() => ipcRenderer.send('exiter:press-refresh-key'), 120);
-  } else {
-    ipcRenderer.send('exiter:reload-page');
-  }
+  if (!onHome) { tab.click(); return; } // clicking the active tab re-fetches it and scrolls to the top
+  // X reloads the timeline on its own "." shortcut, but only for trusted key events, so the main process sends a real one.
+  // Skip it while the user is typing so a "." never lands in the composer.
+  const a = document.activeElement;
+  if (a && a !== document.body && a.closest && a.closest('[contenteditable="true"], input, textarea')) a.blur();
+  setTimeout(() => ipcRenderer.send('exiter:press-refresh-key'), 60);
 }
 ipcRenderer.on('exiter:do-refresh', refreshTimeline);
 
@@ -308,7 +377,12 @@ let palette = null; // { host, input, list, items, active, restore }
 
 function go(path) {
   const link = document.querySelector(`a[href="${path}"]`);
-  if (link) link.click(); else location.assign(path);
+  if (link) { link.click(); return; }
+  // Same-document navigation: X's router listens for popstate, so this swaps the route without reloading (no splash, no lost state)
+  try {
+    history.pushState({}, '', path);
+    window.dispatchEvent(new PopStateEvent('popstate', { state: history.state }));
+  } catch { location.assign(path); }
 }
 const profilePath = () => (document.querySelector('a[data-testid="AppTabBar_Profile_Link"]') || {}).getAttribute?.('href') || '/home';
 const patch = (p) => ipcRenderer.invoke('exiter:set-settings', p);

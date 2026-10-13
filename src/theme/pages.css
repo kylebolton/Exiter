@@ -1,11 +1,7 @@
 /* Per-page touches: Explore, search, profile, notifications, follow buttons */
 
 /* Search input (Explore / search pages) */
-[data-testid="SearchBox_Search_Input"], form[role="search"] > div > div, form[role="search"] > div > div > div {
-  border-radius: var(--radius-input) !important; background: transparent !important; border-color: var(--border) !important;
-}
-form[role="search"] input { font-size: 14px !important; }
-form[role="search"] svg { width: 16px !important; height: 16px !important; color: var(--muted-foreground) !important; }
+/* (search box + typeahead styling lives in search.css) */
 
 /* Follow / Following / Edit profile: 8px-radius buttons instead of pills */
 [data-testid$="-follow"], [data-testid$="-unfollow"], [data-testid="editProfileButton"], [data-testid="userActions"] {

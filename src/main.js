@@ -35,11 +35,15 @@ let tray = null;
 let quitting = false;
 
 const css = (name) => fs.readFileSync(path.join(__dirname, 'theme', name), 'utf8');
+// Read the theme and fonts once: every document load (and every reload) asks for them synchronously
+let cssCache = null;
+let fontCache = null;
 
 // The skin is injected by preload.js at document start (synchronously, before first paint), so a reload never flashes unstyled X.
-const CSS_FILES = ['tokens', 'shell', 'nav', 'feed', 'composer', 'overlays', 'pages', 'loading', 'hide'];
-ipcMain.on('exiter:get-css', (e) => { e.returnValue = CSS_FILES.map((n) => css(`${n}.css`)).join('\n'); });
-ipcMain.on('exiter:get-fonts', (e) => { e.returnValue = JSON.parse(fs.readFileSync(path.join(__dirname, 'theme', 'fonts.json'), 'utf8')).faces; });
+const CSS_FILES = ['tokens', 'shell', 'nav', 'feed', 'composer', 'overlays', 'pages', 'search', 'motion', 'loading', 'hide'];
+ipcMain.on('exiter:get-css', (e) => { e.returnValue = cssCache || (cssCache = CSS_FILES.map((n) => css(`${n}.css`)).join('\n')); });
+ipcMain.on('exiter:get-fonts', (e) => { e.returnValue = fontCache || (fontCache = JSON.parse(fs.readFileSync(path.join(__dirname, 'theme', 'fonts.json'), 'utf8')).faces); });
+ipcMain.on('exiter:route', (_e, route) => { if (typeof route === 'string' && route.startsWith('/') && !route.startsWith('//') && route.length < 200) store.set('lastRoute', route); });
 ipcMain.on('exiter:get-settings-sync', (e) => { e.returnValue = getSettings(); });
 
 function applyZoom() {
@@ -151,6 +155,7 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      backgroundThrottling: false, // a hidden-to-tray window keeps its timers, so new-posts stay current
       partition: 'persist:exiter',
     },
   });
@@ -159,7 +164,9 @@ function createWindow() {
   const showTimer = setTimeout(() => { if (win && !win.isDestroyed()) win.show(); }, 4000);
   win.once('ready-to-show', () => { clearTimeout(showTimer); win.show(); });
 
-  win.loadURL(HOME);
+  // Reopen where the user left off (route is saved by preload.js), but only for plain x.com paths
+  const last = store.get('lastRoute');
+  win.loadURL(typeof last === 'string' && /^\/[A-Za-z0-9_\/?=&%.+-]*$/.test(last) && !last.startsWith('//') ? `https://x.com${last}` : HOME);
   if (process.env.EXITER_DEBUG_PORT) console.log('EXITER_WINDOW_ID', win.getMediaSourceId().split(':')[1]);
 
   const wc = win.webContents;
@@ -187,7 +194,7 @@ function createWindow() {
   win.on('resize', saveBounds);
   win.on('move', saveBounds);
   win.on('close', (e) => {
-    if (isMac && !quitting) { e.preventDefault(); win.hide(); }
+    if (isMac && !quitting) { e.preventDefault(); hiddenAt = Date.now(); win.hide(); }
   });
   // Windows/Linux: a hidden (warm) Settings window must not keep the app alive after the main window closes
   win.on('closed', () => { win = null; if (!isMac) app.quit(); });
@@ -207,9 +214,13 @@ ipcMain.on('exiter:check-updates', () => updater.checkNow());
 ipcMain.handle('exiter:get-version', () => ({ version: app.getVersion(), updatesEnabled: updater.isSupported() }));
 ipcMain.on('exiter:reload-page', () => { if (win && !win.isDestroyed()) win.webContents.reloadIgnoringCache(); });
 
+let hiddenAt = 0;
 function showWindow() {
   if (!win) createWindow();
   if (win.isMinimized()) win.restore();
+  // Back after a while away: refresh so the first thing seen is current, not what was there when it was hidden
+  if (hiddenAt && Date.now() - hiddenAt > 60000) refreshTimeline();
+  hiddenAt = 0;
   win.show();
   win.focus();
 }
@@ -291,6 +302,8 @@ if (!app.requestSingleInstanceLock()) app.quit();
 app.on('second-instance', showWindow);
 
 app.whenReady().then(async () => {
+  // Open connections to X's hosts before the first request needs them
+  try { for (const h of ['https://x.com', 'https://api.x.com', 'https://pbs.twimg.com', 'https://abs.twimg.com', 'https://video.twimg.com']) session.fromPartition('persist:exiter').preconnect({ url: h, numSockets: 2 }); } catch {}
   if (isMac) app.dock.setIcon(path.join(__dirname, '..', 'assets', 'icon.png'));
   buildAppMenu();
   await applyThemeCookie();

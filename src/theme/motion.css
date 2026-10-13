@@ -1,0 +1,42 @@
+/* Motion: user-triggered feedback only, plus one orchestrated moment (the route change). All of it off under reduced motion. */
+
+/* Route change: when preload sees the URL change it sets html[data-ex-route-anim] for one frame-ish; the column eases in */
+@keyframes ex-route-in { from { opacity: 0; translate: 0 6px; } }
+html[data-ex-route-anim] [data-testid="primaryColumn"] > div > div:last-child { animation: ex-route-in var(--ex-dur) var(--ex-ease); }
+
+/* Tabs: the selected underline grows from the centre instead of snapping; label colour eases */
+@keyframes ex-tab-in { from { transform: scaleX(0.2); opacity: 0; } }
+[role="tab"] div[style*="background-color"] { animation: ex-tab-in var(--ex-dur) var(--ex-ease); }
+[role="tab"] span, [role="tab"] div[dir] { transition: color var(--ex-dur-fast) var(--ex-ease); }
+[role="tab"] { transition: background-color var(--ex-dur-fast) var(--ex-ease); }
+
+/* Press feedback */
+nav a[role="link"]:active, [data-testid="SideNav_NewTweet_Button"]:active, article [role="group"] button:active, article [role="group"] a:active,
+[data-testid$="-follow"]:active, [data-testid$="-unfollow"]:active, [data-testid="tweetButtonInline"]:active, [data-testid="tweetButton"]:active,
+button[data-exiter-refresh]:active { scale: 0.96; }
+nav a[role="link"], [data-testid="SideNav_NewTweet_Button"], article [role="group"] button, article [role="group"] a,
+[data-testid$="-follow"], [data-testid$="-unfollow"], [data-testid="tweetButtonInline"], [data-testid="tweetButton"], button[data-exiter-refresh] {
+  transition: background-color var(--ex-dur-fast) var(--ex-ease), color var(--ex-dur-fast) var(--ex-ease), scale var(--ex-dur-fast) var(--ex-ease);
+}
+
+/* Like / bookmark / repost: a small pop when the filled state appears */
+@keyframes ex-pop-in { 0% { scale: 0.7; } 55% { scale: 1.18; } 100% { scale: 1; } }
+[data-testid="unlike"] svg, [data-testid="removeBookmark"] svg, [data-testid="unretweet"] svg { animation: ex-pop-in var(--ex-dur-slow) var(--ex-ease); }
+
+/* Refresh: the icon spins while a refresh is actually in flight (preload sets data-spinning), then settles */
+button[data-exiter-refresh][data-spinning] svg { animation: ex-spin 0.7s linear infinite; }
+
+/* Pill: gentle tick when the count changes (preload toggles data-ex-tick) */
+@keyframes ex-tick { 0% { translate: 0 5px; opacity: 0; } 100% { translate: 0 0; opacity: 1; } }
+button[aria-label^="New posts are available"][data-ex-tick] [data-testid="pillLabel"] { animation: ex-tick var(--ex-dur) var(--ex-ease); }
+
+/* Skeleton shimmer for X's in-feed spinner: soften it rather than leave a bare circle */
+[role="progressbar"] { animation: ex-fade var(--ex-dur) var(--ex-ease); }
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-ex-route-anim] [data-testid="primaryColumn"] > div > div:last-child, [role="tab"] div[style*="background-color"],
+  [data-testid="unlike"] svg, [data-testid="removeBookmark"] svg, [data-testid="unretweet"] svg,
+  button[aria-label^="New posts are available"][data-ex-tick] [data-testid="pillLabel"], [role="progressbar"] { animation: none !important; }
+  nav a[role="link"], article [role="group"] button, article [role="group"] a, button[data-exiter-refresh] { transition: none !important; }
+  nav a[role="link"]:active, article [role="group"] button:active, article [role="group"] a:active, button[data-exiter-refresh]:active { scale: none; }
+}
