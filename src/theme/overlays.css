@@ -47,3 +47,37 @@ html[data-ex-theme="dark"] [data-testid="mask"] { background-color: rgba(0, 0, 0
 @media (prefers-reduced-motion: reduce) {
   [data-testid="Dropdown"], [data-testid="HoverCard"], [role="menu"], [role="dialog"] > div, [data-testid="mask"] { animation: none !important; }
 }
+
+/* More menu: Lucide icons (preload.js swaps them by label) sit in one 16px column, muted; labels stay full-strength */
+[data-testid="Dropdown"] a[role="link"] svg { flex: none; color: var(--muted-foreground) !important; }
+[data-testid="Dropdown"] a[role="link"]:hover svg { color: var(--foreground) !important; }
+[data-testid="Dropdown"] a[role="link"] > div { align-items: center; }
+[data-testid="Dropdown"] a[role="link"] span, [data-testid="Dropdown"] a[role="link"] div[dir] { color: var(--foreground) !important; }
+[data-testid="Dropdown"] { padding: 4px 0; }
+[data-testid="Dropdown"] a[role="link"] svg { margin: 0 !important; }
+[data-testid="Dropdown"] a[role="link"]:focus-visible { outline: 0 !important; background: var(--muted) !important; }
+[data-testid="Dropdown"] [role="separator"], [role="menu"] [role="separator"] { background-color: var(--border) !important; height: 1px !important; margin: 4px 0 !important; }
+[data-testid="Dropdown"] div:has(> [role="separator"]):last-child { display: none !important; }
+
+/* ---------- Confirmation sheets ("Save post?", discard, delete): same card, type scale and buttons as every other layer ---------- */
+[data-testid="confirmationSheetDialog"] {
+  border-radius: var(--radius-lg) !important; box-shadow: var(--shadow-pop) !important; background-color: var(--background) !important;
+}
+[data-testid="confirmationSheetDialog"] { border: 1px solid var(--border) !important; animation: ex-pop var(--ex-dur) var(--ex-ease); transform-origin: center; }
+[data-testid="confirmationSheetDialog"] h1, [data-testid="confirmationSheetDialog"] h1 span { color: var(--foreground) !important; font-size: 16px !important; font-weight: 600 !important; letter-spacing: -0.02em; line-height: 24px !important; }
+[data-testid="confirmationSheetDialog"] > div[dir], [data-testid="confirmationSheetDialog"] > div[dir] span { color: var(--muted-foreground) !important; font-size: 14px !important; line-height: 20px !important; }
+[data-testid="confirmationSheetDialog"] button { min-height: 36px !important; height: 36px !important; border-radius: var(--radius) !important; transition: background-color var(--ex-dur-fast) var(--ex-ease), scale var(--ex-dur-fast) var(--ex-ease); }
+[data-testid="confirmationSheetDialog"] button * { font-size: 14px !important; font-weight: 500 !important; }
+[data-testid="confirmationSheetDialog"] button:active { scale: 0.98; }
+[data-testid="confirmationSheetConfirm"] { background-color: var(--primary) !important; border: 0 !important; }
+[data-testid="confirmationSheetConfirm"] * { color: var(--primary-foreground) !important; }
+[data-testid="confirmationSheetConfirm"]:hover { opacity: 0.9; }
+[data-testid="confirmationSheetCancel"] { background-color: transparent !important; border: 1px solid var(--border) !important; }
+[data-testid="confirmationSheetCancel"] * { color: var(--foreground) !important; }
+[data-testid="confirmationSheetCancel"]:hover { background-color: var(--muted) !important; }
+@media (prefers-reduced-motion: reduce) { [data-testid="confirmationSheetDialog"] { animation: none !important; } [data-testid="confirmationSheetDialog"] button { transition: none !important; } [data-testid="confirmationSheetDialog"] button:active { scale: none; } }
+[data-testid="confirmationSheetDialog"] button:focus-visible { outline: 0 !important; box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--ring) !important; }
+/* The sheet's full-height wrapper is not the card; the card is the inner dialog itself */
+[role="dialog"] > div:has(> [data-testid="confirmationSheetDialog"]), [role="dialog"] > div:has(> div > [data-testid="confirmationSheetDialog"]) {
+  background: transparent !important; border: 0 !important; box-shadow: none !important; border-radius: 0 !important; animation: none !important; overflow: visible;
+}

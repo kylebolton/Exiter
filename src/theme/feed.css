@@ -96,3 +96,21 @@ button[aria-label^="New posts are available"] [data-testid^="UserAvatar-Containe
 button[aria-label^="New posts are available"] [data-testid^="UserAvatar-Container"]:last-of-type { margin-right: 0; }
 button[aria-label^="New posts are available"] [data-testid^="UserAvatar-Container"] > div, button[aria-label^="New posts are available"] [data-testid^="UserAvatar-Container"] > div > div { width: 20px !important; height: 20px !important; padding: 0 !important; }
 button[aria-label^="New posts are available"]:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+
+/* ---------- Inline "Show N posts" row (preload.js tags the cell): a quiet ghost button instead of X-blue text ---------- */
+[data-exiter-showposts] [role="button"], [data-exiter-showposts] a, [data-exiter-showposts] button { cursor: pointer; }
+[data-exiter-showposts] [role="button"], [data-exiter-showposts] a, [data-exiter-showposts] button,
+[data-exiter-showposts] > div > div { min-height: 40px; box-sizing: border-box; }
+[data-exiter-showposts] [role="button"], [data-exiter-showposts] a, [data-exiter-showposts] button {
+  display: flex !important; align-items: center !important; justify-content: center !important; gap: 8px; width: 100%;
+  background: transparent !important; transition: background-color var(--ex-dur-fast) var(--ex-ease), scale var(--ex-dur-fast) var(--ex-ease);
+}
+[data-exiter-showposts] [role="button"]:hover, [data-exiter-showposts] a:hover, [data-exiter-showposts] button:hover { background: var(--hover-tint) !important; }
+[data-exiter-showposts] [role="button"]:active, [data-exiter-showposts] a:active, [data-exiter-showposts] button:active { scale: 0.99; }
+[data-exiter-showposts] span, [data-exiter-showposts] div[dir] {
+  color: var(--muted-foreground) !important; font-size: 13px !important; font-weight: 500 !important; line-height: 20px !important; font-variant-numeric: tabular-nums; text-decoration: none !important;
+}
+[data-exiter-showposts] [role="button"]:hover span, [data-exiter-showposts] a:hover span, [data-exiter-showposts] button:hover span { color: var(--foreground) !important; }
+[data-exiter-showposts] svg[data-exiter-added] { width: 16px !important; height: 16px !important; flex: none; color: var(--muted-foreground); margin-right: 6px; }
+[data-exiter-showposts] [role="button"]:hover svg[data-exiter-added], [data-exiter-showposts] a:hover svg[data-exiter-added] { color: var(--foreground); }
+@media (prefers-reduced-motion: reduce) { [data-exiter-showposts] [role="button"], [data-exiter-showposts] a, [data-exiter-showposts] button { transition: none !important; } [data-exiter-showposts] :active { scale: none !important; } }

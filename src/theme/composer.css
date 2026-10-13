@@ -21,15 +21,32 @@
 [data-exiter-input]:focus-within [data-testid="tweetTextarea_0"] { caret-color: var(--primary) !important; }
 
 /* Toolbar: ghost 32px icon buttons (the inline Post button lives in the same toolbar and keeps its own style) */
-[data-testid="toolBar"] button:not([data-testid="tweetButtonInline"]) {
+[data-testid="toolBar"] button:not([data-testid="tweetButtonInline"]):not([data-testid="tweetButton"]) {
   width: 32px !important; height: 32px !important; border: 0 !important; border-radius: var(--radius) !important; background: transparent !important; color: var(--muted-foreground) !important;
 }
-[data-testid="toolBar"] button:not([data-testid="tweetButtonInline"]):hover { background: var(--muted) !important; color: var(--foreground) !important; }
-[data-testid="toolBar"] button:not([data-testid="tweetButtonInline"]) svg { width: 16px !important; height: 16px !important; }
+[data-testid="toolBar"] button:not([data-testid="tweetButtonInline"]):not([data-testid="tweetButton"]):hover { background: var(--muted) !important; color: var(--foreground) !important; }
+[data-testid="toolBar"] button:not([data-testid="tweetButtonInline"]):not([data-testid="tweetButton"]) svg { width: 16px !important; height: 16px !important; }
 [data-testid="toolBar"] button[aria-label="Previous"], [data-testid="toolBar"] button[aria-label="Next"] { display: none !important; }
-[data-testid="tweetButtonInline"] { width: auto !important; min-width: 64px !important; padding: 0 16px !important; min-height: 32px !important; height: 32px !important; }
+[data-testid="tweetButtonInline"], [data-testid="tweetButton"] { width: auto !important; min-width: 64px !important; padding: 0 16px !important; min-height: 32px !important; height: 32px !important; }
 
 /* Reply-settings chip ("Everyone can reply") */
 button[aria-label*="can reply" i] { margin-left: 16px !important; border: 0 !important; border-radius: var(--radius) !important; padding: 0 8px !important; height: 28px; }
 button[aria-label*="can reply" i], button[aria-label*="can reply" i] * { color: var(--muted-foreground) !important; font-size: 13px !important; font-weight: 500 !important; }
 button[aria-label*="can reply" i]:hover { background: var(--muted) !important; }
+
+/* ---------- Compose dialog: same input, ghost links and buttons as the inline composer ---------- */
+[role="dialog"] [data-exiter-input] { min-height: 120px; padding-block: 10px !important; }
+/* "Drafts" and other X-blue text buttons in the dialog header */
+[data-testid="unsentButton"], [data-testid="unsentButton"] * { color: var(--foreground) !important; font-size: 13px !important; font-weight: 500 !important; }
+[data-testid="unsentButton"] { border-radius: var(--radius) !important; padding: 0 10px !important; min-height: 32px !important; transition: background-color var(--ex-dur-fast) var(--ex-ease); }
+[data-testid="unsentButton"]:hover { background: var(--muted) !important; }
+/* Close button in the dialog header */
+[role="dialog"] [data-testid="app-bar-close"], [role="dialog"] button[aria-label="Close"] { border-radius: var(--radius) !important; border: 0 !important; background: transparent !important; }
+[role="dialog"] button[aria-label="Close"]:hover { background: var(--muted) !important; }
+[role="dialog"] [data-testid="toolBar"] svg { color: var(--muted-foreground) !important; }
+[role="dialog"] button[aria-label*="can reply" i] svg { width: 16px !important; height: 16px !important; }
+/* Character-count ring: neutral track, primary progress (X paints it blue) */
+[data-testid="toolBar"] [role="progressbar"] circle[stroke="#EFF3F4"], [data-testid="toolBar"] [role="progressbar"] circle[stroke="#2F3336"] { stroke: var(--border) !important; }
+[data-testid="toolBar"] [role="progressbar"] circle[stroke="#1D9BF0"] { stroke: var(--primary) !important; }
+[data-testid="toolBar"] [role="progressbar"] circle[fill="#1D9BF0"] { fill: var(--primary) !important; }
+[data-testid="toolBar"] [role="progressbar"] { animation: none !important; }

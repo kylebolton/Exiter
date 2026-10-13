@@ -32,6 +32,11 @@ const ICONS = {
   sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
   moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
   squarePen: '<path d="M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z"/>',
+  zap: '<path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>',
+  squareArrowOutUpRight: '<path d="M21 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6"/><path d="m21 3-9 9"/><path d="M15 3h6v6"/>',
+  mic: '<path d="M12 19v3"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><rect x="9" y="2" width="6" height="13" rx="3"/>',
+  settings: '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
+  fileText: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>',
   users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
 };
 
@@ -77,13 +82,47 @@ function sweepIcons() {
   }
 }
 
+/* ---------- More menu: swap X's glyphs for Lucide, matched by label (hrefs differ per account) ---------- */
+const MENU_ICONS = { 'lists': 'fileText', 'communities': 'users', 'business': 'zap', 'ads': 'squareArrowOutUpRight', 'create your space': 'mic', 'settings and privacy': 'settings' };
+function sweepMenuIcons() {
+  document.querySelectorAll('[data-testid="Dropdown"] a[role="link"]').forEach((a) => {
+    const name = MENU_ICONS[(a.textContent || '').trim().toLowerCase()];
+    const svg = a.querySelector('svg');
+    if (name && svg && svg.getAttribute('data-exiter-icon') !== name) swapIcon(svg, name);
+  });
+}
+
+/* ---------- Inline "Show N posts" banner: tag its timeline cell so CSS can restyle it, and give it an arrow ---------- */
+const SHOW_POSTS = /^Show \d+\+? (new )?posts?$/i;
+function tagShowPosts() {
+  document.querySelectorAll('[data-testid="cellInnerDiv"]:not([data-exiter-showposts]):not(:has(article))').forEach((cell) => {
+    const t = (cell.textContent || '').trim();
+    if (t.length > 30 || !SHOW_POSTS.test(t)) return;
+    cell.setAttribute('data-exiter-showposts', '1');
+  });
+  document.querySelectorAll('[data-exiter-showposts]:not([data-exiter-arrow])').forEach((cell) => {
+    const label = [...cell.querySelectorAll('span')].find((s) => s.children.length === 0 && SHOW_POSTS.test(s.textContent.trim()));
+    if (!label) return;
+    cell.setAttribute('data-exiter-arrow', '1');
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    swapIcon(svg, 'arrowUp');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.setAttribute('data-exiter-added', '1');
+    label.parentElement.insertBefore(svg, label);
+  });
+}
+
 /* ---------- Composer input box: tag the single ancestor X draws a border on ---------- */
 function tagComposerInput() {
   document.querySelectorAll('[data-testid="tweetTextarea_0_label"]:not([data-exiter-tagged])').forEach((label) => {
     label.setAttribute('data-exiter-tagged', '1');
     for (let e = label.parentElement, i = 0; e && i < 16; e = e.parentElement, i++) {
       const cs = getComputedStyle(e);
-      if (parseFloat(cs.borderTopWidth) > 0 && cs.borderTopStyle !== 'none') { e.setAttribute('data-exiter-input', '1'); break; }
+      if (parseFloat(cs.borderTopWidth) > 0 && cs.borderTopStyle !== 'none') {
+        e.setAttribute('data-exiter-input', '1');
+        if (!label.closest('[role="dialog"]')) break;   // the compose dialog nests more than one bordered wrapper; round them all
+      }
+      if (e.getAttribute('role') === 'dialog') break;
     }
   });
 }
@@ -208,7 +247,7 @@ let queued = false;
 function schedule() {
   if (queued) return;
   queued = true;
-  requestAnimationFrame(() => { queued = false; sweepAds(); sweepIcons(); tagComposerInput(); ensureRefreshButton(); releaseAutofocus(); tagQuoteCards(); tagPills(); trackRoute(); tickPill(); clearTimeout(uncapTimer); uncapTimer = setTimeout(uncapColumn, 250); });
+  requestAnimationFrame(() => { queued = false; sweepAds(); sweepIcons(); sweepMenuIcons(); tagShowPosts(); tagComposerInput(); ensureRefreshButton(); releaseAutofocus(); tagQuoteCards(); tagPills(); trackRoute(); tickPill(); clearTimeout(uncapTimer); uncapTimer = setTimeout(uncapColumn, 250); });
 }
 
 window.addEventListener('DOMContentLoaded', () => {
