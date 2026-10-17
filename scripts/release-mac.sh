@@ -43,6 +43,7 @@ fi
 npx electron-builder "${targets[@]}" --publish never ${notarize_flag[@]+"${notarize_flag[@]}"}
 # The builder notarizes the .app; the dmg wrapper is signed, notarized and stapled here.
 if [[ "$notarize" == true && "${targets[*]}" != *dir* ]]; then
-  scripts/notarize-dmg.sh
+  version="$(node -p "require('./package.json').version")"
+  scripts/notarize-dmg.sh "dist/Exiter-$version-mac-universal.dmg"
 fi
 echo "done: $(ls dist | tr '\n' ' ')"

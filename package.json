@@ -1,7 +1,7 @@
 {
   "name": "exiter",
   "productName": "Exiter",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "A sleek, reskinned desktop client for X",
   "main": "src/main.js",
   "author": "Kyle Bolton <hello@kylebolton.me>",
@@ -16,7 +16,8 @@
     "dist:all": "electron-builder --mac --win --linux",
     "fonts": "node scripts/make-fonts.js",
     "release:mac": "scripts/release-mac.sh",
-    "release:publish": "scripts/publish-release.sh"
+    "release:publish": "scripts/publish-release.sh",
+    "test": "electron scripts/test-sidebar.js"
   },
   "build": {
     "appId": "me.kylebolton.exiter",

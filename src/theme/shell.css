@@ -39,13 +39,15 @@ main[role="main"] > div, main[role="main"] > div > div, div:has(> [data-testid="
 html[data-ex-feed="medium"] main[role="main"] { flex: 0 1 760px !important; margin-inline: auto !important; }
 html[data-ex-feed="narrow"] main[role="main"] { flex: 0 1 600px !important; margin-inline: auto !important; }
 
+/* Labels occupy a sibling of the icon wrapper. Badge spans live inside the icon wrapper,
+   so they must never switch the sidebar to its labelled width. */
 /* ---------- Icon rail: X collapses the nav to icons below ~1260px (and on Chat); shrink the sidebar to match ---------- */
-header[role="banner"]:not(:has(nav a span)) { flex-basis: var(--rail-w) !important; width: var(--rail-w) !important; }
-header[role="banner"]:not(:has(nav a span)) > div { width: var(--rail-w) !important; align-items: center !important; }
+header[role="banner"]:not(:has(nav a > div > div + div span)) { flex-basis: var(--rail-w) !important; width: var(--rail-w) !important; }
+header[role="banner"]:not(:has(nav a > div > div + div span)) > div { width: var(--rail-w) !important; align-items: center !important; }
 /* X nests the nav in a position:fixed wrapper with an inline left offset sized for its own layout, plus its own padding; pin and flatten it */
-header[role="banner"]:not(:has(nav a span)) > div > div { left: 0 !important; width: var(--rail-w) !important; max-width: var(--rail-w) !important; align-items: center !important; }
-header[role="banner"]:not(:has(nav a span)) > div > div > div { width: var(--rail-w) !important; align-items: center !important; }
-header[role="banner"]:not(:has(nav a span)) > div, header[role="banner"]:not(:has(nav a span)) div { padding-left: 0 !important; padding-right: 0 !important; }
+header[role="banner"]:not(:has(nav a > div > div + div span)) > div > div { left: 0 !important; width: var(--rail-w) !important; max-width: var(--rail-w) !important; align-items: center !important; }
+header[role="banner"]:not(:has(nav a > div > div + div span)) > div > div > div { width: var(--rail-w) !important; align-items: center !important; }
+header[role="banner"]:not(:has(nav a > div > div + div span)) > div, header[role="banner"]:not(:has(nav a > div > div + div span)) div { padding-left: 0 !important; padding-right: 0 !important; }
 
 /* ---------- Titlebar: hidden inset on macOS, so the top strip drags the window ---------- */
 body::before { content: ""; position: fixed; top: 0; left: 0; right: 0; height: 14px; -webkit-app-region: drag; z-index: 2147483647; }

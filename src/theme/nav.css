@@ -29,19 +29,19 @@ header[role="banner"] nav a[aria-current="page"] span { font-weight: 600 !import
 [data-testid="tweetButtonInline"][aria-disabled="true"], [data-testid="tweetButton"][aria-disabled="true"] { opacity: 0.5 !important; }
 
 /* Labelled sidebar: Post and the account row share the nav's 176px column */
-header[role="banner"]:has(nav a span) [data-testid="SideNav_NewTweet_Button"] { width: 176px !important; max-width: 176px !important; margin: 12px 0 0 0 !important; height: 38px !important; min-height: 38px !important; }
-header[role="banner"]:has(nav a span) [data-testid="SideNav_AccountSwitcher_Button"] { width: 176px !important; max-width: 176px !important; margin: 0 0 24px -8px !important; padding: 8px 10px !important; border-radius: var(--radius) !important; }
+header[role="banner"]:has(nav a > div > div + div span) [data-testid="SideNav_NewTweet_Button"] { width: 176px !important; max-width: 176px !important; margin: 12px 0 0 0 !important; height: 38px !important; min-height: 38px !important; }
+header[role="banner"]:has(nav a > div > div + div span) [data-testid="SideNav_AccountSwitcher_Button"] { width: 176px !important; max-width: 176px !important; margin: 0 0 24px -8px !important; padding: 8px 10px !important; border-radius: var(--radius) !important; }
 [data-testid="SideNav_AccountSwitcher_Button"]:hover { background: var(--muted) !important; }
 [data-testid="SideNav_AccountSwitcher_Button"] svg { width: 16px !important; height: 16px !important; flex: none; color: var(--muted-foreground) !important; }
 header[role="banner"] [data-testid="SideNav_AccountSwitcher_Button"] [data-testid^="UserAvatar-Container"] { width: 36px !important; height: 36px !important; }
 
 /* ---------- Icon rail ---------- */
-header[role="banner"]:not(:has(nav a span)) nav { align-items: center !important; width: 40px !important; margin-inline: 0 !important; }
-header[role="banner"]:not(:has(nav a span)) nav a, header[role="banner"]:not(:has(nav a span)) nav button { width: 40px !important; max-width: 40px !important; margin-inline: 0 !important; }
-header[role="banner"]:not(:has(nav a span)) nav a > div, header[role="banner"]:not(:has(nav a span)) nav button > div { width: 40px !important; height: 40px !important; padding: 0 !important; justify-content: center; }
-header[role="banner"]:not(:has(nav a span)) nav a svg, header[role="banner"]:not(:has(nav a span)) nav button svg { width: 20px !important; height: 20px !important; color: var(--foreground) !important; }
-header[role="banner"]:not(:has(nav a span)) [data-testid="SideNav_NewTweet_Button"] { width: 40px !important; max-width: 40px !important; min-width: 40px !important; margin: 16px 0 0 0 !important; padding: 0 !important; }
-header[role="banner"]:not(:has(nav a span)) [data-testid="SideNav_NewTweet_Button"] svg { width: 16px !important; height: 16px !important; color: var(--primary-foreground) !important; }
-header[role="banner"]:not(:has(nav a span)) [data-testid="SideNav_AccountSwitcher_Button"] { width: 40px !important; max-width: 40px !important; margin: 0 0 20px 0 !important; padding: 2px !important; justify-content: center; }
+header[role="banner"]:not(:has(nav a > div > div + div span)) nav { align-items: center !important; width: 40px !important; margin-inline: 0 !important; }
+header[role="banner"]:not(:has(nav a > div > div + div span)) nav a, header[role="banner"]:not(:has(nav a > div > div + div span)) nav button { width: 40px !important; max-width: 40px !important; margin-inline: 0 !important; }
+header[role="banner"]:not(:has(nav a > div > div + div span)) nav a > div, header[role="banner"]:not(:has(nav a > div > div + div span)) nav button > div { width: 40px !important; height: 40px !important; padding: 0 !important; justify-content: center; }
+header[role="banner"]:not(:has(nav a > div > div + div span)) nav a svg, header[role="banner"]:not(:has(nav a > div > div + div span)) nav button svg { width: 20px !important; height: 20px !important; color: var(--foreground) !important; }
+header[role="banner"]:not(:has(nav a > div > div + div span)) [data-testid="SideNav_NewTweet_Button"] { width: 40px !important; max-width: 40px !important; min-width: 40px !important; margin: 16px 0 0 0 !important; padding: 0 !important; }
+header[role="banner"]:not(:has(nav a > div > div + div span)) [data-testid="SideNav_NewTweet_Button"] svg { width: 16px !important; height: 16px !important; color: var(--primary-foreground) !important; }
+header[role="banner"]:not(:has(nav a > div > div + div span)) [data-testid="SideNav_AccountSwitcher_Button"] { width: 40px !important; max-width: 40px !important; margin: 0 0 20px 0 !important; padding: 2px !important; justify-content: center; }
 
 html[data-ex-density="compact"] header[role="banner"] nav a > div, html[data-ex-density="compact"] header[role="banner"] nav button > div { height: 34px !important; margin-bottom: 0 !important; }
