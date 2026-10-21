@@ -20,7 +20,7 @@ const GROUPS = [
   ] },
   { title: 'Layout', rows: [
     { type: 'seg', key: 'feedWidth', label: 'Feed width', options: [['fill', 'Fill'], ['medium', 'Medium'], ['narrow', 'Narrow']] },
-    { type: 'seg', key: 'density', label: 'Density', options: [['comfortable', 'Comfortable'], ['compact', 'Compact']] },
+    { type: 'seg', key: 'density', label: 'Density', options: [['compact', 'Compact'], ['comfortable', 'Comfortable'], ['airy', 'Airy']] },
     { type: 'range', key: 'mediaMax', label: 'Max media width', min: 360, max: 960, step: 20, unit: 'px' },
   ] },
   { title: 'Content', rows: [

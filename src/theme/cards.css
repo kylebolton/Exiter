@@ -1,0 +1,74 @@
+/* Cards and quoted posts: quote card, link cards, polls, verified badge, post header details.
+   Selectors use data-testid / aria / inline-style hooks (hashed X classes change too often). preload.js tags quoted posts with data-exiter-quote. */
+
+/* ---------- Quote card: flat hairline card ---------- */
+[data-exiter-quote] {
+  border: 1px solid var(--border) !important; border-radius: var(--radius-lg) !important; background: transparent !important;
+  box-shadow: none !important; overflow: hidden; box-sizing: border-box;
+  margin-top: max(0px, calc(var(--ex-gap) - 12px));
+  transition: background-color var(--ex-dur-fast) var(--ex-ease);
+}
+[data-exiter-quote]:hover { background: var(--hover-tint) !important; }
+[data-exiter-quote] * { border-color: var(--border); }
+/* Header: 20px avatar, name 600, handle + time muted on the same line */
+[data-exiter-quote] [data-testid^="UserAvatar-Container"], [data-exiter-quote] [data-testid^="UserAvatar-Container"] > div,
+[data-exiter-quote] [data-testid^="UserAvatar-Container"] img { width: 20px !important; height: 20px !important; min-width: 0 !important; }
+[data-exiter-quote] [data-testid^="UserAvatar-Container"] { margin-right: 8px; }
+[data-exiter-quote] [data-testid="User-Name"] { font-size: 14px; }
+[data-exiter-quote] [data-testid="User-Name"] > div:nth-child(2) { display: inline-flex; align-items: center; gap: 4px; }
+article [data-exiter-quote] [data-testid="tweetText"] { font-size: 14px; line-height: var(--ex-leading) !important; }
+[data-exiter-quote] [data-testid="tweetPhoto"], [data-exiter-quote] [data-testid="videoPlayer"] { border-radius: var(--radius) !important; }
+html[data-ex-density="airy"] [data-exiter-quote] { padding: 4px; }
+
+/* ---------- Link cards ---------- */
+article [data-testid="card.wrapper"] {
+  border: 1px solid var(--border) !important; border-radius: var(--radius-lg) !important; background: transparent !important;
+  box-shadow: none !important; transition: background-color var(--ex-dur-fast) var(--ex-ease);
+}
+article [data-testid="card.wrapper"]:hover { background: var(--hover-tint) !important; }
+article [data-testid="card.wrapper"] > div, article [data-testid="card.wrapper"] [role="link"] { border-color: var(--border) !important; border-radius: inherit; background: transparent !important; }
+article [data-testid="card.wrapper"] div[dir] span { letter-spacing: -0.006em; }
+
+/* ---------- Polls ---------- */
+[data-testid="cardPoll"] { border-radius: var(--radius-lg); }
+[data-testid="cardPoll"] [role="radio"], [data-testid="cardPoll"] [role="button"], [data-testid="cardPoll"] div[style*="border-radius"] { border-radius: var(--radius) !important; }
+[data-testid="cardPoll"] [style*="rgb(29, 155, 240)"] { background-color: var(--primary) !important; border-color: var(--primary) !important; }
+[data-testid="cardPoll"] [style*="rgb(207, 217, 222)"], [data-testid="cardPoll"] [style*="rgb(51, 54, 57)"], [data-testid="cardPoll"] [style*="rgb(47, 51, 54)"] { background-color: var(--muted) !important; }
+[data-testid="cardPoll"] span { font-size: 14px !important; font-variant-numeric: tabular-nums; }
+
+/* ---------- Verified badge: neutral line icon (swapped in by preload.js) ---------- */
+svg[data-testid="icon-verified"] { width: 14px !important; height: 14px !important; color: var(--foreground) !important; flex: none; }
+
+/* ---------- Remaining X-blue text -> neutral ---------- */
+article [style*="color: rgb(29, 155, 240)"], [data-testid="primaryColumn"] [style*="color: rgb(29, 155, 240)"] { color: var(--foreground) !important; }
+
+/* ---------- Post header, context lines, thread connectors ---------- */
+[data-testid="socialContext"], [data-testid="socialContext"] span { font-size: 13px !important; font-weight: 500 !important; color: var(--muted-foreground) !important; }
+[data-testid="cellInnerDiv"] div[style*="width: 2px"][style*="background-color"] { background-color: var(--border) !important; }
+article [data-testid="caret"] { margin: -6px -8px -6px 0; width: 32px; height: 32px; border-radius: var(--radius) !important; color: var(--muted-foreground) !important; }
+article [data-testid="caret"] > div > div:first-child { border-radius: var(--radius) !important; background: transparent !important; }
+article [data-testid="caret"]:hover > div > div:first-child { background: var(--muted) !important; }
+article [data-testid="caret"] svg { width: 16px !important; height: 16px !important; }
+article [data-testid="User-Name"] { column-gap: 4px; }
+article [data-testid="User-Name"] svg { vertical-align: -2px; }
+
+/* ---------- Profile hover card: "Profile Summary" and other pill buttons become 8px-radius outline buttons ---------- */
+[data-testid="HoverCard"] button:not([data-testid$="-follow"]):not([data-testid$="-unfollow"]) {
+  border-radius: var(--radius) !important; min-height: 36px !important; background: transparent !important;
+  border: 1px solid var(--border) !important; color: var(--foreground) !important; cursor: pointer;
+  transition: background-color var(--ex-dur-fast) var(--ex-ease), scale var(--ex-dur-fast) var(--ex-ease);
+}
+[data-testid="HoverCard"] button:not([data-testid$="-follow"]):not([data-testid$="-unfollow"]) > div { border-radius: inherit !important; border: 0 !important; background: transparent !important; gap: 8px; }
+[data-testid="HoverCard"] button:not([data-testid$="-follow"]):not([data-testid$="-unfollow"]):hover { background: var(--muted) !important; }
+[data-testid="HoverCard"] button:not([data-testid$="-follow"]):not([data-testid$="-unfollow"]):active { scale: 0.98; }
+[data-testid="HoverCard"] button:not([data-testid$="-follow"]):not([data-testid$="-unfollow"]) span { font-size: 14px !important; font-weight: 500 !important; color: var(--foreground) !important; }
+[data-testid="HoverCard"] button:not([data-testid$="-follow"]):not([data-testid$="-unfollow"]) svg { width: 16px !important; height: 16px !important; color: var(--foreground) !important; }
+[data-testid="HoverCard"] [data-testid="UserDescription"], [data-testid="HoverCard"] [data-testid="UserDescription"] span { font-size: 14px !important; line-height: 20px !important; }
+/* Bio links and mentions (hover card, profile): neutral with a quiet underline, like post text links */
+[data-testid="UserDescription"] a, [data-testid="UserDescription"] a span { color: var(--foreground) !important; text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--foreground) 30%, transparent); text-underline-offset: 2px; }
+
+/* Name row: the display name (14px, optionally capitalised) and the handle/time (13px) sit on one centre line with equal line boxes */
+article [data-testid="User-Name"] { align-items: center !important; }
+article [data-testid="User-Name"] > div, article [data-testid="User-Name"] > div > div { display: flex; align-items: center !important; min-height: 20px; }
+article [data-testid="User-Name"] span, article [data-testid="User-Name"] time, article [data-testid="User-Name"] div[dir] { line-height: 20px !important; }
+article [data-testid="User-Name"] svg { vertical-align: middle; flex: none; }

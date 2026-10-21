@@ -40,7 +40,7 @@ let cssCache = null;
 let fontCache = null;
 
 // The skin is injected by preload.js at document start (synchronously, before first paint), so a reload never flashes unstyled X.
-const CSS_FILES = ['tokens', 'shell', 'nav', 'feed', 'composer', 'overlays', 'pages', 'search', 'motion', 'loading', 'hide'];
+const CSS_FILES = ['tokens', 'shell', 'nav', 'feed', 'cards', 'composer', 'overlays', 'pages', 'search', 'motion', 'loading', 'hide'];
 ipcMain.on('exiter:get-css', (e) => { e.returnValue = cssCache || (cssCache = CSS_FILES.map((n) => css(`${n}.css`)).join('\n')); });
 ipcMain.on('exiter:get-fonts', (e) => { e.returnValue = fontCache || (fontCache = JSON.parse(fs.readFileSync(path.join(__dirname, 'theme', 'fonts.json'), 'utf8')).faces); });
 ipcMain.on('exiter:route', (_e, route) => { if (typeof route === 'string' && route.startsWith('/') && !route.startsWith('//') && route.length < 200) store.set('lastRoute', route); });

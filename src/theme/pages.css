@@ -17,6 +17,7 @@
 
 /* Notification type icons: quiet, no heavy fills */
 [data-testid="notification"] svg { width: 20px !important; height: 20px !important; }
+[data-testid="notification"] svg[data-testid="icon-verified"] { width: 14px !important; height: 14px !important; }
 
 /* Thin scrollbars that appear on hover */
 ::-webkit-scrollbar { width: 8px; height: 8px; background: transparent; }
@@ -50,3 +51,21 @@ div:has(> a[href$="/header_photo"]) { max-width: 720px; }
 [data-exiter-pill] { border-radius: var(--radius) !important; }
 /* Floating label inside sign-in fields: neutral instead of X blue */
 [role="dialog"] label:has(input) span { color: var(--muted-foreground) !important; font-size: 13px !important; }
+
+/* ---------- Profile header ---------- */
+[data-testid="UserName"] [class*="r-b88u0q"], [data-testid="UserName"] [class*="r-b88u0q"] span { font-size: 18px !important; font-weight: 600 !important; letter-spacing: -0.02em; }
+[data-testid="UserName"] svg[data-testid="icon-verified"] { width: 16px !important; height: 16px !important; }
+[data-testid="UserProfileHeader_Items"], [data-testid="UserProfileHeader_Items"] span { font-size: 13px !important; color: var(--muted-foreground) !important; }
+[data-testid="UserProfileHeader_Items"] svg { width: 16px !important; height: 16px !important; color: var(--muted-foreground) !important; }
+[data-testid="UserDescription"], [data-testid="UserDescription"] span { font-size: var(--ex-font-size); line-height: var(--ex-leading) !important; }
+[data-testid="primaryColumn"] a[href$="/following"], [data-testid="primaryColumn"] a[href$="/verified_followers"], [data-testid="primaryColumn"] a[href$="/followers"] { color: var(--muted-foreground) !important; }
+[data-testid="primaryColumn"] a[href$="/following"] span, [data-testid="primaryColumn"] a[href$="/verified_followers"] span, [data-testid="primaryColumn"] a[href$="/followers"] span { font-size: 14px !important; }
+[data-testid="primaryColumn"] a[href$="/following"] span:first-child, [data-testid="primaryColumn"] a[href$="/followers"] span:first-child { color: var(--foreground) !important; font-weight: 600 !important; font-variant-numeric: tabular-nums; }
+[data-testid^="UserAvatar-Container"] img { box-shadow: 0 0 0 1px var(--border); }
+
+/* ---------- Notifications + lists: same row padding and hover as posts ---------- */
+[data-testid="notification"], [data-testid="listCell"], [data-testid="DMDrawerHeader"] { transition: background-color var(--ex-dur-fast) var(--ex-ease); }
+[data-testid="notification"]:hover, [data-testid="listCell"]:hover { background: var(--hover-tint); }
+[data-testid="notification"] svg { color: var(--muted-foreground) !important; }
+[data-testid="listCell"] span { font-size: 14px !important; }
+[data-testid="primaryColumn"] [data-testid="listCell"] [class*="r-b88u0q"] span { font-weight: 600 !important; }

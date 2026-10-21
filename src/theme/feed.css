@@ -43,7 +43,7 @@ button[aria-label^="New posts are available"] [data-testid="pillLabel"], button[
 }
 
 /* ---------- Post rows (hairline-divided, not cards) ---------- */
-article[data-testid="tweet"] { transition: background-color 0.12s ease; }
+article[data-testid="tweet"] { transition: background-color 0.12s ease; padding: calc(var(--ex-pad) - 16px) var(--ex-pad); }
 [data-testid="cellInnerDiv"]:hover article[data-testid="tweet"] { background: var(--hover-tint); }
 article [data-testid="tweetText"] { font-size: var(--ex-font-size); line-height: var(--ex-leading) !important; }
 article [data-testid="User-Name"] { font-size: 14px; }
@@ -59,6 +59,10 @@ article div:has(> [data-testid="card.wrapper"]), article div:has(> [data-testid=
 article div:has(> [data-testid="videoPlayer"]), article div:has(> div > [data-testid="videoPlayer"]), [data-exiter-cap] { max-width: var(--media-max) !important; }
 
 /* Action row: Lucide icons (swapped in by preload.js), ghost hover, tabular counts */
+/* Action row: clear air under text/media (8px comfortable), and pull the row out by the 8px each ghost button pads its icon with, so the first icon lines up with the post text and the last with the right edge */
+article [role="group"] { margin-top: max(4px, calc(var(--ex-gap) - 4px)); margin-inline: -8px; min-height: 32px; align-items: center; }
+article [role="group"] button > div, article [role="group"] a > div { align-items: center; gap: 2px; }
+article [role="group"] button > div > div:first-child, article [role="group"] a > div > div:first-child { border-radius: var(--radius) !important; }
 article [role="group"] button, article [role="group"] a { color: var(--muted-foreground) !important; }
 article [role="group"] button svg, article [role="group"] a svg { width: 16px !important; height: 16px !important; }
 article [role="group"] span { font-size: 12px !important; color: var(--muted-foreground) !important; font-variant-numeric: tabular-nums; }
@@ -114,3 +118,11 @@ button[aria-label^="New posts are available"]:focus-visible { outline: 2px solid
 [data-exiter-showposts] svg[data-exiter-added] { width: 16px !important; height: 16px !important; flex: none; color: var(--muted-foreground); margin-right: 6px; }
 [data-exiter-showposts] [role="button"]:hover svg[data-exiter-added], [data-exiter-showposts] a:hover svg[data-exiter-added] { color: var(--foreground); }
 @media (prefers-reduced-motion: reduce) { [data-exiter-showposts] [role="button"], [data-exiter-showposts] a, [data-exiter-showposts] button { transition: none !important; } [data-exiter-showposts] :active { scale: none !important; } }
+
+/* "Show N posts" pill with poster avatars: the stack is one centred 20px row, whatever offsets X gives its wrappers, and the label shares the centre line */
+button[aria-label^="New posts are available"] > div { align-items: center !important; }
+button[aria-label^="New posts are available"] div:has(> [data-testid^="UserAvatar-Container"]) {
+  display: flex !important; flex-direction: row !important; align-items: center !important; align-self: center !important;
+  height: 20px !important; min-height: 0 !important; margin-block: 0 !important; padding-block: 0 !important;
+}
+button[aria-label^="New posts are available"] [data-testid^="UserAvatar-Container"] { flex: none !important; align-self: center !important; margin-block: 0 !important; top: 0 !important; transform: none !important; }
