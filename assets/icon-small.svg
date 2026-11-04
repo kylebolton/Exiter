@@ -1,6 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
-  <!-- The same white tile and rounded X, with a slightly bolder stroke at small sizes. -->
-  <rect x="64" y="64" width="896" height="896" rx="210" fill="#fff"/>
-  <rect x="68" y="68" width="888" height="888" rx="206" fill="none" stroke="#e4e4e7" stroke-width="8"/>
-  <path d="M382 382C450 432 574 592 642 642M642 382C574 432 450 592 382 642" fill="none" stroke="#27272a" stroke-width="96" stroke-linecap="round"/>
+  <defs><linearGradient id="face" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#efeff2"/></linearGradient></defs>
+  <!-- Keep the raised white tile and a crisp rounded mark at 16–64px. -->
+  <rect x="64" y="76" width="896" height="884" rx="210" fill="#c9c9cf"/>
+  <rect x="64" y="58" width="896" height="884" rx="210" fill="url(#face)"/>
+  <path d="M382 380C450 430 574 590 642 640M642 380C574 430 450 590 382 640" fill="none" stroke="#27272a" stroke-width="96" stroke-linecap="round"/>
 </svg>

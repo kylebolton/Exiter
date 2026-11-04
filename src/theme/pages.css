@@ -28,8 +28,19 @@
 /* Section and page headings: X's 20px/800 is heavy next to the quiet rows; use shadcn-scale titles */
 [data-testid="primaryColumn"] h2[role="heading"], [data-testid="primaryColumn"] h2[role="heading"] span { font-size: 17px !important; font-weight: 600 !important; letter-spacing: -0.02em; }
 
-/* Profile: the banner and avatar scale with the feed width (a 350px banner and 250px avatar on wide windows); cap the header block */
-div:has(> a[href$="/header_photo"]) { max-width: 720px; }
+/* Profile: the whole header fills the column, without scaling the avatar into a portrait. */
+[data-exiter-profile-header], div:has(> a[href$="/header_photo"]) { width: 100% !important; max-width: none !important; box-sizing: border-box; }
+[data-exiter-profile-banner] { width: 100% !important; height: clamp(160px, 18vw, 240px) !important; padding-bottom: 0 !important; flex: none; overflow: hidden !important; }
+[data-exiter-profile-banner] > div { height: 100% !important; }
+[data-exiter-profile-banner] [style*="padding-bottom"] { padding-bottom: 0 !important; }
+[data-exiter-profile-banner] img { object-fit: cover !important; }
+[data-exiter-profile-avatar] {
+  width: 112px !important; min-width: 112px !important; max-width: 112px !important;
+  height: 112px !important; min-height: 112px !important; max-height: 112px !important;
+  margin-top: -56px !important; margin-bottom: 12px !important; flex: none !important;
+}
+[data-exiter-profile-summary] { width: 100% !important; box-sizing: border-box; }
+[data-exiter-profile-summary] [data-testid="UserDescription"] { max-width: 72ch; }
 
 /* ---------- Logged-out / sign-in flow ---------- */
 /* Dialog card: same radius and hairline as every other floating layer */

@@ -134,6 +134,19 @@ function tagMediaViewer() {
   });
 }
 
+/* Profile headers stretch with the feed; the avatar and cover height keep their own scale. */
+function tagProfileHeader() {
+  const name = document.querySelector('[data-testid="primaryColumn"] [data-testid="UserName"]');
+  if (!name || name.closest('article')) return;
+  const summary = name.parentElement;
+  const header = summary.parentElement;
+  header.setAttribute('data-exiter-profile-header', '');
+  summary.setAttribute('data-exiter-profile-summary', '');
+  const cover = header.querySelector('a[href$="/header_photo"]') || (header.firstElementChild !== summary ? header.firstElementChild : null);
+  cover?.setAttribute('data-exiter-profile-banner', '');
+  header.querySelector('[data-testid^="UserAvatar-Container"]')?.setAttribute('data-exiter-profile-avatar', '');
+}
+
 /* ---------- More menu: swap X's glyphs for Lucide, matched by label (hrefs differ per account) ---------- */
 const MENU_ICONS = { 'lists': 'fileText', 'communities': 'users', 'business': 'zap', 'ads': 'squareArrowOutUpRight', 'create your space': 'mic', 'settings and privacy': 'settings' };
 function sweepMenuIcons() {
@@ -319,7 +332,7 @@ function schedule() {
   queued = true;
   requestAnimationFrame(() => {
     queued = false;
-    tagMediaViewer(); sweepAds(); sweepIcons(); sweepBadges(); ensurePostIcon(); sweepMenuIcons(); tagShowPosts(); tagComposerInput(); ensureRefreshButton(); releaseAutofocus(); tagQuoteCards(); tagQuotedPosts(); tagPills(); trackRoute(); tickPill();
+    tagMediaViewer(); tagProfileHeader(); sweepAds(); sweepIcons(); sweepBadges(); ensurePostIcon(); sweepMenuIcons(); tagShowPosts(); tagComposerInput(); ensureRefreshButton(); releaseAutofocus(); tagQuoteCards(); tagQuotedPosts(); tagPills(); trackRoute(); tickPill();
     // Throttle rather than continually postponing layout work while the timeline streams in.
     if (uncapTimer === null) uncapTimer = setTimeout(() => { uncapTimer = null; uncapColumn(); }, 100);
   });

@@ -1,11 +1,23 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
   <defs>
+    <linearGradient id="face" x1="0" y1="0" x2=".3" y2="1">
+      <stop offset="0" stop-color="#fff"/><stop offset=".55" stop-color="#fdfdfd"/><stop offset="1" stop-color="#ececef"/>
+    </linearGradient>
+    <linearGradient id="edge" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#d4d4d8"/>
+    </linearGradient>
+    <linearGradient id="ink" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3f3f46"/><stop offset="1" stop-color="#18181b"/>
+    </linearGradient>
     <filter id="shadow" x="-15%" y="-15%" width="130%" height="140%">
-      <feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#09090b" flood-opacity=".12"/>
+      <feDropShadow dx="0" dy="16" stdDeviation="16" flood-color="#09090b" flood-opacity=".18"/>
     </filter>
   </defs>
-  <rect x="64" y="64" width="896" height="896" rx="210" fill="#fff" filter="url(#shadow)"/>
-  <rect x="65" y="65" width="894" height="894" rx="209" fill="none" stroke="#e4e4e7" stroke-width="2"/>
-  <!-- A small, soft X: short curved arms and generous white space. -->
-  <path d="M382 382C450 432 574 592 642 642M642 382C574 432 450 592 382 642" fill="none" stroke="#27272a" stroke-width="84" stroke-linecap="round"/>
+  <!-- A shallow porcelain-like tile: raised face, soft lower edge, and a grounded shadow. -->
+  <rect x="64" y="76" width="896" height="884" rx="210" fill="#c9c9cf" filter="url(#shadow)"/>
+  <rect x="64" y="58" width="896" height="884" rx="210" fill="url(#face)"/>
+  <rect x="66" y="60" width="892" height="880" rx="208" fill="none" stroke="url(#edge)" stroke-width="4"/>
+  <!-- A small, soft X with a slight recess highlight. -->
+  <path d="M382 384C450 434 574 594 642 644M642 384C574 434 450 594 382 644" fill="none" stroke="#fff" stroke-width="88" stroke-linecap="round"/>
+  <path d="M382 380C450 430 574 590 642 640M642 380C574 430 450 590 382 640" fill="none" stroke="url(#ink)" stroke-width="84" stroke-linecap="round"/>
 </svg>

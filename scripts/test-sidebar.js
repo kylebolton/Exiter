@@ -169,7 +169,27 @@ app.whenReady().then(async () => {
     await evaluate(`history.pushState({}, '', '/compose/post'); document.querySelector('#layer').innerHTML='<div role="dialog"><div id="ordinary-card"><input aria-label="Post text"><button aria-label="Close"><svg></svg></button></div></div>'`);
     await settle();
     assert.deepEqual(await evaluate(`(() => {const el=document.querySelector('#ordinary-card'), cs=getComputedStyle(el);return {media:el.parentElement.hasAttribute('data-exiter-media-viewer'),border:cs.borderTopWidth,radius:cs.borderTopLeftRadius,shadow:cs.boxShadow!=='none'};})()`), {media:false,border:'1px',radius:'12px',shadow:true});
-    console.log(`Passed ${cases} rail/fill cases, feed width settings, dynamic content, six light/dark media viewers, close interactions, and ordinary dialog styling.`);
+    await evaluate(`document.querySelector('#layer').replaceChildren(); history.pushState({}, '', '/user'); document.querySelector('[data-testid="primaryColumn"]').insertAdjacentHTML('afterbegin', '<div id="profile"><a href="/user/header_photo"><div style="position:relative"><div style="padding-bottom:33.3333%"></div><img alt="Cover" src="${image}" style="position:absolute;inset:0;width:100%;height:100%"></div></a><div style="padding:16px"><div style="flex-direction:row;justify-content:space-between"><div data-testid="UserAvatar-Container-profile" style="width:25%;aspect-ratio:1;margin-top:-15%"><a href="/user/photo"><img alt="Avatar" src="${image}"></a></div><button id="profile-edit" style="height:32px">Edit profile</button></div><div data-testid="UserName">Profile name</div><div data-testid="UserDescription">A profile bio</div></div></div>')`);
+    for (const width of [700, 1000, 1440, 1920, 1000]) {
+      win.setContentSize(width, 900);
+      await settle();
+      const actual = await evaluate(`(() => {
+        const rect=sel=>document.querySelector(sel).getBoundingClientRect(), banner=rect('[data-exiter-profile-banner]'), avatar=rect('[data-exiter-profile-avatar]');
+        return {header:rect('#profile').width,banner:banner.width,height:banner.height,avatarWidth:avatar.width,avatarHeight:avatar.height,overlap:banner.bottom-avatar.top,
+          editWithin:rect('#profile-edit').right<=rect('#profile').right,editClear:rect('#profile-edit').left>avatar.right,
+          nameBelow:rect('[data-testid="UserName"]').top>=avatar.bottom,overflow:document.documentElement.scrollWidth>innerWidth};
+      })()`);
+      near(actual.overlap, 40, `profile avatar overlap at ${width}`);
+      delete actual.overlap;
+      assert.deepEqual(actual, {header:width-89,banner:width-89,height:Math.max(160,Math.min(240,width*.18)),avatarWidth:112,avatarHeight:112,
+        editWithin:true,editClear:true,nameBelow:true,overflow:false}, `profile width ${width}`);
+    }
+    // A profile without a cover image still needs a bounded placeholder and compact avatar.
+    await evaluate(`document.querySelector('[data-exiter-profile-banner]').outerHTML='<div id="empty-cover" style="padding-bottom:33.3333%"></div>'`);
+    await settle();
+    assert.equal(await evaluate(`document.querySelector('#empty-cover').hasAttribute('data-exiter-profile-banner')`), true);
+    near(await evaluate(`document.querySelector('#empty-cover').getBoundingClientRect().height`), 180, 'empty profile cover height');
+    console.log(`Passed ${cases} rail/fill cases, single Post icon mounts, feed width settings, dynamic content, six light/dark media viewers, close interactions, ordinary dialogs, and wide/narrow profiles.`);
     app.exit(0);
   } catch (error) {
     console.error(error);
