@@ -4,9 +4,9 @@
 
 # Exiter
 
-**A quiet, fast desktop app for X.** Exiter wraps x.com in its own window and gives it a clean, minimal, [shadcn](https://ui.shadcn.com)-inspired look, a command palette, real keyboard navigation and a settings window to switch off the clutter. You sign in to X as usual; there is no API and no account on Exiter's side.
+**A quiet, fast desktop app for X.** Exiter wraps x.com in its own window and gives it a clean, minimal, [shadcn](https://ui.shadcn.com)-inspired look, a white X app icon, a command palette, real keyboard navigation and a settings window to switch off the clutter. You sign in to X as usual; there is no API and no account on Exiter's side.
 
-> **Early release (v0.1).** It works and is used daily, but expect rough edges. Please open an issue if something looks wrong.
+> **Early release.** It works and is used daily, but expect rough edges. Please open an issue if something looks wrong.
 
 ## Why this exists
 
@@ -28,10 +28,10 @@ Get the latest build from the [**Releases page**](https://github.com/kylebolton/
 
 ## Features
 
-- **A calmer interface.** A zinc-neutral design system with light and dark themes, Geist type, thin line icons, hairline-divided posts and an icon rail that adapts to the window width.
+- **A calmer interface.** A zinc-neutral design system with light and dark themes, Geist type, thin line icons, hairline-divided posts and a fixed icon rail that stays in place as the window grows.
 - **Command palette (Cmd/Ctrl+K).** Jump to any page, start a post, refresh the timeline, flip the theme, or search X and open an `@name`, all from the keyboard.
 - **Refresh that works.** Cmd/Ctrl+R (or the refresh button) loads new posts; Cmd/Ctrl+Shift+R reloads the page. If your connection drops, Exiter shows an offline screen and reconnects by itself.
-- **Make it yours.** Settings cover theme, accent colour, font, text size, line spacing, interface zoom, feed width, density, media size, and which sidebar items appear. There is an option to CAPITALISE usernames.
+- **Make it yours.** Settings cover theme, accent colour, font, text size, line spacing, interface zoom, feed width, density, media size, and which sidebar items appear. Choose **Settings → Layout → Feed width → Fill** to use all the space beside the navigation rail. There is an option to CAPITALISE usernames.
 - **Hide what you don't want.** Promoted posts, the right-hand column, suggestions, the floating chat buttons, the X logo and engagement counts can each be switched off.
 - **Desktop touches.** Menu bar icon, global shortcuts (**Cmd/Ctrl+Shift+X** show or hide, **Cmd/Ctrl+Shift+N** new post), close-to-tray on macOS, launch at login.
 - **Automatic updates.** See [Updates](#updates).

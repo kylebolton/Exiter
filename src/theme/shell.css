@@ -16,16 +16,16 @@ a:focus-visible, button:focus-visible, [role="button"]:focus-visible, [role="tab
 }
 
 /* ---------- Layout: sidebar pinned left, feed fills the rest ---------- */
-div:has(> header[role="banner"]) { max-width: none !important; width: 100% !important; margin: 0 !important; justify-content: flex-start !important; }
-header[role="banner"] { flex: 0 0 var(--sidebar-w) !important; width: var(--sidebar-w) !important; }
-header[role="banner"] > div { width: var(--sidebar-w) !important; padding: 0 14px !important; box-sizing: border-box; }
+[data-exiter-shell], div:has(> header[role="banner"]) { max-width: none !important; width: 100% !important; min-width: 0 !important; margin: 0 !important; box-sizing: border-box; justify-content: flex-start !important; }
+header[role="banner"] { flex: 0 0 var(--rail-w) !important; width: var(--rail-w) !important; }
+header[role="banner"] > div { width: var(--rail-w) !important; box-sizing: border-box; align-items: center !important; }
 
 main[role="main"] { flex: 1 1 auto !important; width: auto !important; min-width: 0 !important; max-width: none !important; }
-main[role="main"] > div, main[role="main"] > div > div, div:has(> [data-testid="primaryColumn"]) {
-  flex: 1 1 auto !important; width: 100% !important; max-width: none !important; justify-content: flex-start !important;
+[data-exiter-column], main[role="main"] > div, main[role="main"] > div > div, div:has(> [data-testid="primaryColumn"]) {
+  flex: 1 1 auto !important; width: 100% !important; min-width: 0 !important; max-width: none !important; margin-inline: 0 !important; box-sizing: border-box; justify-content: flex-start !important;
 }
 [data-testid="primaryColumn"] {
-  flex: 1 1 auto !important; width: 100% !important; max-width: none !important;
+  flex: 1 1 0% !important; width: 100% !important; min-width: 0 !important; max-width: none !important; box-sizing: border-box;
   border-left: 1px solid var(--border) !important; border-right: 0 !important; min-height: 100vh;
 }
 [data-testid="primaryColumn"] * { border-color: var(--border) !important; }
@@ -39,15 +39,10 @@ main[role="main"] > div, main[role="main"] > div > div, div:has(> [data-testid="
 html[data-ex-feed="medium"] main[role="main"] { flex: 0 1 760px !important; margin-inline: auto !important; }
 html[data-ex-feed="narrow"] main[role="main"] { flex: 0 1 600px !important; margin-inline: auto !important; }
 
-/* Labels occupy a sibling of the icon wrapper. Badge spans live inside the icon wrapper,
-   so they must never switch the sidebar to its labelled width. */
-/* ---------- Icon rail: X collapses the nav to icons below ~1260px (and on Chat); shrink the sidebar to match ---------- */
-header[role="banner"]:not(:has(nav a > div > div + div span)) { flex-basis: var(--rail-w) !important; width: var(--rail-w) !important; }
-header[role="banner"]:not(:has(nav a > div > div + div span)) > div { width: var(--rail-w) !important; align-items: center !important; }
 /* X nests the nav in a position:fixed wrapper with an inline left offset sized for its own layout, plus its own padding; pin and flatten it */
-header[role="banner"]:not(:has(nav a > div > div + div span)) > div > div { left: 0 !important; width: var(--rail-w) !important; max-width: var(--rail-w) !important; align-items: center !important; }
-header[role="banner"]:not(:has(nav a > div > div + div span)) > div > div > div { width: var(--rail-w) !important; align-items: center !important; }
-header[role="banner"]:not(:has(nav a > div > div + div span)) > div, header[role="banner"]:not(:has(nav a > div > div + div span)) div { padding-left: 0 !important; padding-right: 0 !important; }
+header[role="banner"] > div > div { left: 0 !important; width: var(--rail-w) !important; max-width: var(--rail-w) !important; align-items: center !important; }
+header[role="banner"] > div > div > div { width: var(--rail-w) !important; align-items: center !important; }
+header[role="banner"] div { padding-left: 0 !important; padding-right: 0 !important; }
 
 /* ---------- Titlebar: hidden inset on macOS, so the top strip drags the window ---------- */
 body::before { content: ""; position: fixed; top: 0; left: 0; right: 0; height: 14px; -webkit-app-region: drag; z-index: 2147483647; }

@@ -28,6 +28,7 @@ const ICONS = {
   refreshCw: '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
   arrowUp: '<path d="m5 12 7-7 7 7"/><path d="M12 19V5"/>',
   arrowLeft: '<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
+  x: '<path d="m18 6-12 12M6 6l12 12"/>',
   arrowRight: '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
   sliders: '<line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/>',
   sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
@@ -86,6 +87,51 @@ function sweepIcons() {
 /* X's verified badge is an <svg data-testid="icon-verified"> itself (not a wrapper), so it needs its own sweep */
 function sweepBadges() {
   document.querySelectorAll('svg[data-testid="icon-verified"]:not([data-exiter-icon])').forEach((svg) => swapIcon(svg, 'badgeCheck'));
+}
+
+/* X removes the Post icon when its own navigation expands. Keep our rail's control present. */
+function ensurePostIcon() {
+  const post = document.querySelector('[data-testid="SideNav_NewTweet_Button"]');
+  if (!post) return;
+  const icons = [...post.querySelectorAll('svg')];
+  let svg = icons.find(icon => !icon.hasAttribute('data-exiter-added')) || icons[0];
+  if (!svg) {
+    svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.setAttribute('data-exiter-added', '');
+    (post.firstElementChild || post).prepend(svg);
+  }
+  for (const other of icons) {
+    if (other === svg) continue;
+    if (other.hasAttribute('data-exiter-added')) other.remove();
+    else other.removeAttribute('data-exiter-post-icon');
+  }
+  svg.setAttribute('data-exiter-post-icon', '');
+  if (svg.getAttribute('data-exiter-icon') !== 'squarePen') swapIcon(svg, 'squarePen');
+}
+
+/* Image viewers use full-screen wrappers, not the cards used by other dialogs. */
+function tagMediaViewer() {
+  const mediaRoute = /\/(?:photo(?:\/\d+)?|header_photo)\/?$/.test(location.pathname);
+  document.querySelectorAll('[role="dialog"]').forEach((dialog) => {
+    // Post viewers may include a reply composer; avatar images in ordinary dialogs do not identify a viewer.
+    const media = mediaRoute && (dialog.querySelector('[data-testid="swipe-to-dismiss"]') ||
+      [...dialog.querySelectorAll('img')].some(img => !img.closest('[data-testid^="UserAvatar-Container"]')));
+    dialog.toggleAttribute('data-exiter-media-viewer', !!media);
+    dialog.querySelectorAll('[data-testid="app-bar-close"], button[aria-label="Close"]').forEach((button) => {
+      button.toggleAttribute('data-exiter-media-close', !!media);
+      const svg = button.querySelector('svg');
+      if (media && svg && svg.getAttribute('data-exiter-icon') !== 'x') swapIcon(svg, 'x');
+      if (media) {
+        // Keep the cross inside the image stage: a post's reply panel otherwise covers
+        // fixed controls positioned against the window's right edge. Leave room for X's panel toggle.
+        let stage = button.parentElement;
+        while (stage && stage !== dialog && !(stage.clientWidth > 160 && stage.querySelector('img'))) stage = stage.parentElement;
+        const right = stage ? Math.max(0, innerWidth - stage.getBoundingClientRect().right) : 0;
+        button.style.setProperty('--exiter-media-close-right', `${right + (location.pathname.includes('/status/') ? 60 : 16)}px`);
+      } else button.style.removeProperty('--exiter-media-close-right');
+    });
+  });
 }
 
 /* ---------- More menu: swap X's glyphs for Lucide, matched by label (hrefs differ per account) ---------- */
@@ -167,17 +213,25 @@ function tagQuotedPosts() {
   });
 }
 
-/* ---------- Free X's 600px width caps inside the main column (the depth differs per page) ---------- */
+/* ---------- Free layout wrappers, without stretching media or quoted cards ---------- */
 let uncapTimer = null;
 function uncapColumn() {
   const col = document.querySelector('[data-testid="primaryColumn"]');
-  if (!col) return;
+  const main = col && col.closest('main[role="main"]');
+  if (!main) return;
+  for (let el = main.parentElement; el && el.id !== 'react-root'; el = el.parentElement) {
+    el.setAttribute('data-exiter-shell', '');
+  }
+  for (let el = col.parentElement; el && el !== main; el = el.parentElement) {
+    el.setAttribute('data-exiter-column', '');
+  }
   let level = [col];
   for (let depth = 0; depth < 8 && level.length; depth++) {
     const next = [];
     for (const el of level) {
       for (const k of el.children) {
         if (k.tagName !== 'DIV' && k.tagName !== 'SECTION') continue;
+        if (k.matches('[role="link"], [data-exiter-cap], [data-exiter-quote], [data-testid="tweetPhoto"], [data-testid="videoPlayer"], [data-testid="card.wrapper"]')) continue;
         if (k.hasAttribute('data-exiter-free')) { next.push(k); continue; }
         if (getComputedStyle(k).maxWidth === '600px') k.setAttribute('data-exiter-free', '1');
         next.push(k);
@@ -263,8 +317,16 @@ let queued = false;
 function schedule() {
   if (queued) return;
   queued = true;
-  requestAnimationFrame(() => { queued = false; sweepAds(); sweepIcons(); sweepBadges(); sweepMenuIcons(); tagShowPosts(); tagComposerInput(); ensureRefreshButton(); releaseAutofocus(); tagQuoteCards(); tagQuotedPosts(); tagPills(); trackRoute(); tickPill(); clearTimeout(uncapTimer); uncapTimer = setTimeout(uncapColumn, 250); });
+  requestAnimationFrame(() => {
+    queued = false;
+    tagMediaViewer(); sweepAds(); sweepIcons(); sweepBadges(); ensurePostIcon(); sweepMenuIcons(); tagShowPosts(); tagComposerInput(); ensureRefreshButton(); releaseAutofocus(); tagQuoteCards(); tagQuotedPosts(); tagPills(); trackRoute(); tickPill();
+    // Throttle rather than continually postponing layout work while the timeline streams in.
+    if (uncapTimer === null) uncapTimer = setTimeout(() => { uncapTimer = null; uncapColumn(); }, 100);
+  });
 }
+
+window.addEventListener('resize', schedule);
+window.addEventListener('popstate', schedule);
 
 window.addEventListener('DOMContentLoaded', () => {
   new MutationObserver(schedule).observe(document.body, { childList: true, subtree: true });
@@ -278,6 +340,7 @@ let current = null;
 function applySettings(s) {
   current = s;
   const root = document.documentElement;
+  if (!root) return; // Settings can arrive before <html>; DOMContentLoaded applies current again.
   const flag = (name, on) => (on ? root.setAttribute(name, '') : root.removeAttribute(name));
   root.setAttribute('data-ex-theme', s.theme);
   root.setAttribute('data-ex-density', s.density);

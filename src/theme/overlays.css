@@ -1,6 +1,6 @@
 /* Floating layers: menus, popovers, dialogs, hover cards, tooltips. Hairline border, 12px radius, one shadow. */
 
-[role="menu"], [data-testid="Dropdown"], [data-testid="HoverCard"], [role="dialog"] > div {
+[role="menu"], [data-testid="Dropdown"], [data-testid="HoverCard"], [role="dialog"]:not([data-exiter-media-viewer]) > div {
   background-color: var(--background) !important; border: 1px solid var(--border) !important; border-radius: var(--radius-lg) !important; box-shadow: var(--shadow-pop) !important; overflow: hidden;
 }
 [role="menu"] [role="menuitem"], [data-testid="Dropdown"] [role="menuitem"] { border-radius: 6px !important; margin: 2px 4px; transition: background-color 0.1s ease; }
@@ -42,10 +42,10 @@ html[data-ex-theme="dark"] [data-testid="mask"] { background-color: rgba(0, 0, 0
 @keyframes ex-pop { from { opacity: 0; translate: 0 -4px; scale: 0.98; } }
 @keyframes ex-fade { from { opacity: 0; } }
 [data-testid="Dropdown"], [data-testid="HoverCard"], [role="menu"] { animation: ex-pop 0.12s var(--ex-ease); transform-origin: top; }
-[role="dialog"] > div { animation: ex-pop 0.14s ease-out; }
+[role="dialog"]:not([data-exiter-media-viewer]) > div { animation: ex-pop 0.14s ease-out; }
 [data-testid="mask"] { animation: ex-fade 0.14s ease-out; }
 @media (prefers-reduced-motion: reduce) {
-  [data-testid="Dropdown"], [data-testid="HoverCard"], [role="menu"], [role="dialog"] > div, [data-testid="mask"] { animation: none !important; }
+  [data-testid="Dropdown"], [data-testid="HoverCard"], [role="menu"], [role="dialog"]:not([data-exiter-media-viewer]) > div, [data-testid="mask"] { animation: none !important; }
 }
 
 /* More menu: Lucide icons (preload.js swaps them by label) sit in one 16px column, muted; labels stay full-strength */
@@ -78,6 +78,27 @@ html[data-ex-theme="dark"] [data-testid="mask"] { background-color: rgba(0, 0, 0
 @media (prefers-reduced-motion: reduce) { [data-testid="confirmationSheetDialog"] { animation: none !important; } [data-testid="confirmationSheetDialog"] button { transition: none !important; } [data-testid="confirmationSheetDialog"] button:active { scale: none; } }
 [data-testid="confirmationSheetDialog"] button:focus-visible { outline: 0 !important; box-shadow: 0 0 0 2px var(--background), 0 0 0 4px var(--ring) !important; }
 /* The sheet's full-height wrapper is not the card; the card is the inner dialog itself */
-[role="dialog"] > div:has(> [data-testid="confirmationSheetDialog"]), [role="dialog"] > div:has(> div > [data-testid="confirmationSheetDialog"]) {
+[role="dialog"]:not([data-exiter-media-viewer]) > div:has(> [data-testid="confirmationSheetDialog"]), [role="dialog"]:not([data-exiter-media-viewer]) > div:has(> div > [data-testid="confirmationSheetDialog"]) {
   background: transparent !important; border: 0 !important; box-shadow: none !important; border-radius: 0 !important; animation: none !important; overflow: visible;
+}
+
+/* Full-screen media viewers must not turn their close wrapper into a dialog card. */
+[role="dialog"][data-exiter-media-viewer] [data-exiter-media-close] {
+  display: flex !important; align-items: center !important; justify-content: center !important;
+  width: 36px !important; min-width: 36px !important; height: 36px !important; min-height: 36px !important;
+  padding: 0 !important; border: 0 !important; border-radius: var(--radius) !important;
+  background: var(--background) !important; color: var(--foreground) !important;
+  position: fixed !important; top: 20px !important; right: var(--exiter-media-close-right, 16px) !important; left: auto !important;
+  z-index: 1; cursor: pointer; transition: background-color var(--ex-dur-fast) var(--ex-ease);
+}
+[role="dialog"][data-exiter-media-viewer] [data-exiter-media-close]:hover { background: var(--muted) !important; }
+[role="dialog"][data-exiter-media-viewer] [data-exiter-media-close] > div { background: transparent !important; }
+[role="dialog"][data-exiter-media-viewer] [data-exiter-media-close] svg {
+  width: 18px !important; height: 18px !important; flex: none; color: var(--foreground) !important;
+}
+[role="dialog"][data-exiter-media-viewer] [data-exiter-media-close]:focus-visible {
+  outline: 2px solid var(--ring) !important; outline-offset: 2px !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  [role="dialog"][data-exiter-media-viewer] [data-exiter-media-close] { transition: none !important; }
 }
