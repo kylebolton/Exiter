@@ -1,5 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
-  <!-- Simplified white mark for a clear silhouette at 16–64px. -->
-  <rect x="64" y="64" width="896" height="896" rx="204" fill="#18181b"/>
-  <path d="m300 300 424 424m0-424L300 724" stroke="#fff" stroke-width="116" stroke-linecap="round" fill="none"/>
+  <!-- The same white tile and rounded X, with a slightly bolder stroke at small sizes. -->
+  <rect x="64" y="64" width="896" height="896" rx="210" fill="#fff"/>
+  <rect x="68" y="68" width="888" height="888" rx="206" fill="none" stroke="#e4e4e7" stroke-width="8"/>
+  <path d="M382 382C450 432 574 592 642 642M642 382C574 432 450 592 382 642" fill="none" stroke="#27272a" stroke-width="96" stroke-linecap="round"/>
 </svg>

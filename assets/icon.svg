@@ -1,15 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
   <defs>
-    <linearGradient id="tile" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#27272a"/>
-      <stop offset="1" stop-color="#09090b"/>
-    </linearGradient>
-    <mask id="under"><path d="M320 320 704 704" stroke="#fff" stroke-width="88" stroke-linecap="round" fill="none"/></mask>
+    <filter id="shadow" x="-15%" y="-15%" width="130%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#09090b" flood-opacity=".12"/>
+    </filter>
   </defs>
-  <rect x="64" y="64" width="896" height="896" rx="204" fill="url(#tile)"/>
-  <rect x="65" y="65" width="894" height="894" rx="203" fill="none" stroke="#fff" stroke-opacity=".12" stroke-width="2"/>
-  <!-- Two white strokes retain Exiter's rounded, interlocking X. -->
-  <path d="m320 320 384 384" stroke="#fff" stroke-width="84" stroke-linecap="round" fill="none"/>
-  <path d="m704 320-384 384" stroke="#18181b" stroke-width="120" stroke-linecap="round" fill="none" mask="url(#under)"/>
-  <path d="m704 320-384 384" stroke="#fff" stroke-width="84" stroke-linecap="round" fill="none"/>
+  <rect x="64" y="64" width="896" height="896" rx="210" fill="#fff" filter="url(#shadow)"/>
+  <rect x="65" y="65" width="894" height="894" rx="209" fill="none" stroke="#e4e4e7" stroke-width="2"/>
+  <!-- A small, soft X: short curved arms and generous white space. -->
+  <path d="M382 382C450 432 574 592 642 642M642 382C574 432 450 592 382 642" fill="none" stroke="#27272a" stroke-width="84" stroke-linecap="round"/>
 </svg>

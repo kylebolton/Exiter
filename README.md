@@ -4,7 +4,7 @@
 
 # Exiter
 
-**A quiet, fast desktop app for X.** Exiter wraps x.com in its own window and gives it a clean, minimal, [shadcn](https://ui.shadcn.com)-inspired look, a white X app icon, a command palette, real keyboard navigation and a settings window to switch off the clutter. You sign in to X as usual; there is no API and no account on Exiter's side.
+**A quiet, fast desktop app for X.** Exiter wraps x.com in its own window and gives it a clean, minimal, [shadcn](https://ui.shadcn.com)-inspired look, a white app icon with a small, rounded X, a command palette, real keyboard navigation and a settings window to switch off the clutter. You sign in to X as usual; there is no API and no account on Exiter's side.
 
 > **Early release.** It works and is used daily, but expect rough edges. Please open an issue if something looks wrong.
 

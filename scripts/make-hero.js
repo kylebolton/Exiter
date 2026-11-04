@@ -1,4 +1,4 @@
-// Renders docs/hero.png (README header): the white app mark on a charcoal background, plus the wordmark.
+// Renders docs/hero.png (README header): the white app tile on a charcoal background, plus the wordmark.
 // Run with Electron: npx electron scripts/make-hero.js
 const { app, BrowserWindow } = require('electron');
 const fs = require('fs');
