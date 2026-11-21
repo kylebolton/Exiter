@@ -34,6 +34,7 @@ Get the latest build from the [**Releases page**](https://github.com/kylebolton/
 - **Make it yours.** Settings cover theme, accent colour, font, text size, line spacing, interface zoom, feed width, density, media size, and which sidebar items appear. Choose **Settings → Layout → Feed width → Fill** to use all the space beside the navigation rail. There is an option to CAPITALISE usernames.
 - **Hide what you don't want.** Promoted posts, the right-hand column, suggestions, the floating chat buttons, the X logo and engagement counts can each be switched off.
 - **Desktop touches.** Menu bar icon, global shortcuts (**Cmd/Ctrl+Shift+X** show or hide, **Cmd/Ctrl+Shift+N** new post), close-to-tray on macOS, launch at login.
+- **Desktop notifications.** Enable them under **Settings → Notifications** to get quiet alerts when X’s unread count rises while Exiter is running in the background. Click an alert to open Notifications, or use **Send test** to check your system setup.
 - **Automatic updates.** See [Updates](#updates).
 
 <p align="center">
@@ -59,7 +60,7 @@ Exiter is an independent, unofficial project. It is **not affiliated with, endor
 
 ## Build from source
 
-Requires Node 20+.
+Use Node 24 for development and release builds.
 
 ```sh
 git clone https://github.com/kylebolton/Exiter.git

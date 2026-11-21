@@ -10,11 +10,16 @@ header[role="banner"] nav a span, header[role="banner"] nav button span {
   font-size: 14px !important; font-weight: 500 !important; color: var(--muted-foreground) !important; white-space: nowrap !important; overflow: visible !important; text-overflow: clip !important;
 }
 header[role="banner"] nav a svg, header[role="banner"] nav button svg { width: 16px !important; height: 16px !important; color: var(--muted-foreground) !important; }
-header[role="banner"] nav a:hover > div, header[role="banner"] nav button:hover > div { background: var(--muted) !important; }
+header[role="banner"] nav a:is(:hover, :focus-visible) > div,
+header[role="banner"] nav button:is(:hover, :focus-visible) > div { background: var(--muted) !important; }
 header[role="banner"] nav a:hover span, header[role="banner"] nav a:hover svg,
 header[role="banner"] nav button:hover span, header[role="banner"] nav button:hover svg,
 header[role="banner"] nav a[aria-current="page"] span, header[role="banner"] nav a[aria-current="page"] svg { color: var(--foreground) !important; }
-header[role="banner"] nav a[aria-current="page"] > div { background: var(--muted) !important; }
+header[role="banner"] nav a[aria-current="page"] > div { background: var(--muted) !important; position: relative; }
+header[role="banner"] nav a[aria-current="page"] > div::before {
+  content: ""; position: absolute; inset: 12px auto 12px -6px; width: 2px;
+  background: var(--primary); border-radius: 2px; pointer-events: none;
+}
 header[role="banner"] nav a[aria-current="page"] span { font-weight: 600 !important; }
 
 /* Primary button (sidebar Post, composer Post) */

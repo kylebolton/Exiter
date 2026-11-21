@@ -8,7 +8,7 @@ app.whenReady().then(async () => {
   const settings = {
     theme: 'light', accent: 'zinc', radius: 8, fontSize: 15, density: 'comfortable',
     feedWidth: 'fill', mediaMax: 620, fontFamily: 'geist', lineHeight: 'normal',
-    caps: 'names', hideRightRail: true, nav: {},
+    caps: 'names', hideRightRail: true, nav: {}, uiZoom: 100,
   };
   const theme = ['tokens', 'shell', 'nav', 'feed', 'cards', 'composer', 'overlays', 'pages', 'search', 'motion', 'loading', 'hide'];
   const css = theme.map(name => readFileSync(path.join(__dirname, '..', 'src', 'theme', `${name}.css`), 'utf8')).join('\n');
@@ -189,7 +189,128 @@ app.whenReady().then(async () => {
     await settle();
     assert.equal(await evaluate(`document.querySelector('#empty-cover').hasAttribute('data-exiter-profile-banner')`), true);
     near(await evaluate(`document.querySelector('#empty-cover').getBoundingClientRect().height`), 180, 'empty profile cover height');
-    console.log(`Passed ${cases} rail/fill cases, single Post icon mounts, feed width settings, dynamic content, six light/dark media viewers, close interactions, ordinary dialogs, and wide/narrow profiles.`);
+
+    // A press can be cancelled. Mouse release and keyboard-generated clicks are X's to handle.
+    assert.equal(await evaluate(`(() => {
+      const link = document.querySelector('nav a');
+      let clicks = 0;
+      link.addEventListener('click', event => { event.preventDefault(); clicks++; });
+      link.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0 }));
+      const pressed = clicks;
+      link.click();
+      return pressed === 0 && clicks === 1;
+    })()`), true, 'navigation waits for the click');
+
+    await evaluate(`document.querySelector('nav a').focus()`);
+    const sendKey = (keyCode, modifiers = []) => {
+      for (const type of ['keyDown', 'keyUp']) win.webContents.sendInputEvent({ type, keyCode, modifiers });
+    };
+    sendKey('K', [process.platform === 'darwin' ? 'meta' : 'control']);
+    await settle();
+    assert.equal(await evaluate(`document.querySelector('#exiter-palette').hasAttribute('data-open')`), true);
+    sendKey('Down');
+    await settle();
+    assert.equal(await evaluate(`document.querySelector('#exiter-palette').shadowRoot.querySelector('input').getAttribute('aria-activedescendant')`), 'exp-1');
+    await evaluate(`document.querySelector('#exiter-palette').shadowRoot.querySelector('.close').click()`);
+    assert.equal(await evaluate(`document.activeElement === document.querySelector('nav a')`), true);
+
+    const notifications = [];
+    ipcMain.on('exiter:unread-increased', () => notifications.push(true));
+    await evaluate(`document.querySelector('nav').insertAdjacentHTML('beforeend', '<a data-testid="AppTabBar_Profile_Link" href="/user">Profile</a><a data-testid="AppTabBar_Notifications_Link" href="/notifications" aria-label="1 unread notifications">Notifications</a>')`);
+    const waitForBadge = () => evaluate('new Promise(resolve => setTimeout(resolve, 420))');
+    const badge = count => evaluate(`document.querySelector('[data-testid="AppTabBar_Notifications_Link"]').setAttribute('aria-label', '${count} unread notifications')`);
+    win.webContents.send('exiter:settings', { ...settings, desktopNotifications: true });
+    await waitForBadge();
+    assert.equal(notifications.length, 0, 'existing unread badge does not alert');
+    await badge(2);
+    await waitForBadge();
+    assert.equal(notifications.length, 1, 'an increase alerts');
+    await badge(1);
+    await waitForBadge();
+    assert.equal(notifications.length, 1, 'a decrease stays quiet');
+    await evaluate(`document.querySelector('[data-testid="AppTabBar_Profile_Link"]').href = '/other-account'`);
+    await badge(4);
+    await waitForBadge();
+    assert.equal(notifications.length, 1, 'switching accounts establishes a baseline');
+    win.webContents.send('exiter:settings', settings);
+    await badge(5);
+    await waitForBadge();
+    assert.equal(notifications.length, 1, 'disabled alerts stay quiet');
+
+    ipcMain.handle('exiter:get-version', () => ({ version: '0.4.1', updatesEnabled: false }));
+    ipcMain.handle('exiter:set-settings', (event, patch) => {
+      const nav = { ...settings.nav, ...patch.nav };
+      Object.assign(settings, patch, { nav });
+      event.sender.send('exiter:settings', settings);
+      return settings;
+    });
+    let resets = 0;
+    let testAlerts = 0;
+    let updateChecks = 0;
+    ipcMain.handle('exiter:reset-settings', () => { resets++; });
+    ipcMain.handle('exiter:test-notification', () => { testAlerts++; return 'Test notification sent.'; });
+    ipcMain.on('exiter:check-updates', () => { updateChecks++; });
+    const preferences = new BrowserWindow({ show: false, width: 480, webPreferences: {
+      sandbox: true, preload: path.join(__dirname, '..', 'src', 'settings', 'preload.js'),
+    } });
+    const prefs = code => preferences.webContents.executeJavaScript(code);
+    await preferences.loadFile(path.join(__dirname, '..', 'src', 'settings', 'index.html'));
+    preferences.webContents.debugger.attach('1.3');
+    await preferences.webContents.debugger.sendCommand('Emulation.setFocusEmulationEnabled', { enabled: true });
+    await prefs('new Promise(resolve => setTimeout(resolve, 150))');
+    const groups = await prefs(`[...document.querySelectorAll('#sections a')].map(a => a.hash)`);
+    assert.deepEqual(groups, ['#appearance', '#text', '#layout', '#content', '#sidebar', '#app', '#notifications', '#updates']);
+    for (const group of groups) {
+      await prefs(`document.querySelector('a[href="${group}"]').click(); new Promise(resolve => setTimeout(resolve, 30))`);
+      assert.equal(await prefs('location.hash'), group);
+    }
+    await prefs(`(async () => {
+      for (const button of document.querySelectorAll('[aria-pressed]')) {
+        button.focus();
+        button.click();
+        await new Promise(next => setTimeout(next, 20));
+        if (!button.isConnected || button.getAttribute('aria-pressed') !== 'true' || document.activeElement !== button) {
+          throw Error('Settings option lost its value or focus: ' + button.title);
+        }
+      }
+      for (const input of document.querySelectorAll('[role="switch"]')) {
+        input.focus();
+        const before = input.checked;
+        input.click();
+        await new Promise(next => setTimeout(next, 20));
+        if (input.checked === before || document.activeElement !== input) {
+          throw Error('Settings switch lost its value or focus: ' + input.getAttribute('aria-labelledby'));
+        }
+      }
+    })()`);
+    for (const [id, value, unit] of [['radius', 9, 'px'], ['fontSize', 17, 'px'], ['uiZoom', 115, '%'], ['mediaMax', 800, 'px']]) {
+      const current = await prefs(`(async () => {
+        const input = document.getElementById('${id}');
+        input.value = '${value}';
+        input.dispatchEvent(new Event('input'));
+        input.dispatchEvent(new Event('change'));
+        await new Promise(resolve => setTimeout(resolve, 30));
+        return document.querySelector('output[for="${id}"]').value;
+      })()`);
+      assert.equal(settings[id], value);
+      assert.equal(current, value + unit);
+    }
+    await prefs(`(async () => {
+      document.querySelector('[aria-describedby="testNotification-description"]').click();
+      document.querySelector('[aria-describedby="checkUpdates-description"]').click();
+      const reset = document.getElementById('reset');
+      reset.click();
+      document.querySelector('#confirm-reset button[value="cancel"]').click();
+      await new Promise(resolve => setTimeout(resolve, 30));
+    })()`);
+    assert.equal(resets, 0);
+    assert.equal(testAlerts, 1);
+    assert.equal(updateChecks, 1);
+    await prefs(`document.getElementById('reset').click();
+      document.querySelector('#confirm-reset button[value="reset"]').click();
+      new Promise(resolve => setTimeout(resolve, 30));`);
+    assert.equal(resets, 1);
+    console.log(`Passed ${cases} rail/fill cases, light/dark media viewers, profiles, sidebar clicks, palette keyboard and close controls, unread badge changes, and Settings sections and controls.`);
     app.exit(0);
   } catch (error) {
     console.error(error);

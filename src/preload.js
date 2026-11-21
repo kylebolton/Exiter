@@ -309,22 +309,44 @@ function tickPill() {
   lastPill = label;
 }
 
-/* Sidebar links fire on pointer-down, not on release: ~80ms sooner, and the following click is swallowed so the route isn't entered twice */
-let synthClick = false;
-let swallow = null;
-document.addEventListener('pointerdown', (e) => {
-  if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-  const a = e.target.closest && e.target.closest('nav a[role="link"][href^="/"]');
-  if (!a) return;
-  synthClick = true; a.click(); synthClick = false;
-  swallow = a;
-  setTimeout(() => { swallow = null; }, 600);
-}, true);
-document.addEventListener('click', (e) => {
-  if (synthClick) return;
-  const a = e.target.closest && e.target.closest('nav a[role="link"]');
-  if (a && a === swallow) { swallow = null; e.preventDefault(); e.stopPropagation(); }
-}, true);
+/* Read the unread indicator that X already keeps current, including while the
+   window is hidden. A fresh document or account establishes a baseline. */
+const NOTIFICATIONS_LINK = 'a[data-testid="AppTabBar_Notifications_Link"]';
+const PROFILE_LINK = 'a[data-testid="AppTabBar_Profile_Link"]';
+let unread;
+let unreadAccount;
+let unreadTimer;
+
+function readUnread(link) {
+  for (const candidate of [link, ...link.querySelectorAll('[aria-label]')]) {
+    const label = candidate.getAttribute('aria-label') || '';
+    const announced = label.match(/\b(\d+)\+?\s+unread\b/i);
+    if (announced) return Number(announced[1]);
+  }
+  const icon = link.querySelector('svg');
+  const badge = icon?.parentElement?.textContent.trim();
+  return badge && /^\d+\+?$/.test(badge) ? Number(badge.replace('+', '')) : 0;
+}
+
+function checkUnread() {
+  unreadTimer = undefined;
+  if (!current?.desktopNotifications) {
+    unread = unreadAccount = undefined;
+    return;
+  }
+  const link = document.querySelector(NOTIFICATIONS_LINK);
+  const account = document.querySelector(PROFILE_LINK)?.getAttribute('href');
+  if (!link || !account) return;
+  const next = readUnread(link);
+  if (account === unreadAccount && next > unread) ipcRenderer.send('exiter:unread-increased');
+  unread = next;
+  unreadAccount = account;
+}
+
+function scheduleUnread() {
+  if (!current?.desktopNotifications || unreadTimer !== undefined) return;
+  unreadTimer = setTimeout(checkUnread, 300);
+}
 
 let queued = false;
 function schedule() {
@@ -344,6 +366,12 @@ window.addEventListener('popstate', schedule);
 window.addEventListener('DOMContentLoaded', () => {
   new MutationObserver(schedule).observe(document.body, { childList: true, subtree: true });
   schedule();
+  if (location.origin === 'https://x.com' && window === window.top) {
+    new MutationObserver(scheduleUnread).observe(document.body, {
+      childList: true, characterData: true, attributes: true, attributeFilter: ['aria-label', 'href'], subtree: true,
+    });
+    scheduleUnread();
+  }
 });
 
 /* ---------- Settings: reflect the user's choices as <html> attributes (read by hide.css/theme.css) and CSS variables ---------- */
@@ -351,7 +379,14 @@ const ACCENTS = { zinc: '#18181b', blue: '#2563eb', violet: '#7c3aed', rose: '#e
 let current = null;
 
 function applySettings(s) {
+  const notificationsChanged = current?.desktopNotifications !== s.desktopNotifications;
   current = s;
+  if (notificationsChanged) {
+    clearTimeout(unreadTimer);
+    unreadTimer = undefined;
+    unread = unreadAccount = undefined;
+    if (location.origin === 'https://x.com' && window === window.top) scheduleUnread();
+  }
   const root = document.documentElement;
   if (!root) return; // Settings can arrive before <html>; DOMContentLoaded applies current again.
   const flag = (name, on) => (on ? root.setAttribute(name, '') : root.removeAttribute(name));
@@ -420,6 +455,10 @@ if (location.protocol !== 'file:') {
 /* ---------- Timeline refresh ---------- */
 // One refresh at a time. It finishes when the first post actually changes (or after 2.5s), then eases back to the top.
 let refreshing = false;
+function scrollToTop() {
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  window.scrollTo({ top: 0, behavior: reduced ? 'instant' : 'smooth' });
+}
 const firstPostKey = () => {
   const a = document.querySelector('[data-testid="primaryColumn"] article');
   const t = a && a.querySelector('time');
@@ -427,8 +466,17 @@ const firstPostKey = () => {
 };
 function refreshTimeline() {
   if (refreshing) return;
+  const active = document.activeElement;
+  if (active?.closest('[contenteditable="true"], input, textarea')) return;
   refreshing = true;
-  const spin = (on) => { const b = document.querySelector('button[data-exiter-refresh]'); if (b) on ? b.setAttribute('data-spinning', '') : b.removeAttribute('data-spinning'); };
+  const spin = (on) => {
+    const button = document.querySelector('button[data-exiter-refresh]');
+    if (!button) return;
+    button.toggleAttribute('data-spinning', on);
+    button.setAttribute('aria-busy', String(on));
+    button.setAttribute('aria-disabled', String(on));
+    button.setAttribute('aria-label', on ? 'Refreshing timeline' : 'Refresh timeline');
+  };
   spin(true);
   const before = firstPostKey();
   let done = false;
@@ -439,7 +487,7 @@ function refreshTimeline() {
     done = true;
     if (obs) obs.disconnect();
     clearTimeout(cap);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    scrollToTop();
     setTimeout(() => { refreshing = false; spin(false); }, 350);
   };
   const pill = document.querySelector('button[aria-label^="New posts are available"]');
@@ -452,10 +500,7 @@ function refreshTimeline() {
   if (pill) { pill.click(); return; }
   if (!onHome) { tab.click(); return; } // clicking the active tab re-fetches it and scrolls to the top
   // X reloads the timeline on its own "." shortcut, but only for trusted key events, so the main process sends a real one.
-  // Skip it while the user is typing so a "." never lands in the composer.
-  const a = document.activeElement;
-  if (a && a !== document.body && a.closest && a.closest('[contenteditable="true"], input, textarea')) a.blur();
-  setTimeout(() => ipcRenderer.send('exiter:press-refresh-key'), 60);
+  ipcRenderer.send('exiter:press-refresh-key');
 }
 ipcRenderer.on('exiter:do-refresh', refreshTimeline);
 
@@ -480,13 +525,18 @@ const PALETTE_CSS = `
   :host { all: initial; }
   * { box-sizing: border-box; }
   .overlay { position: fixed; inset: 0; z-index: 2147483646; display: flex; justify-content: center; align-items: flex-start; padding-top: 14vh;
-    background: rgba(0,0,0,.4); backdrop-filter: blur(2px); font: 14px/1.5 var(--ex-font, system-ui); letter-spacing: -0.011em; color: var(--foreground, #09090b); animation: fade .12s ease-out; }
+    background: rgba(0,0,0,.4); backdrop-filter: blur(2px); font: 14px/1.5 var(--ex-font, system-ui); letter-spacing: -0.011em; color: var(--foreground, #09090b);
+    opacity: 0; visibility: hidden; pointer-events: none;
+    transition: opacity var(--ex-dur-fast) var(--ex-ease), visibility 0s var(--ex-dur-fast); }
   :host-context(html[data-ex-theme="dark"]) .overlay { background: rgba(0,0,0,.65); }
+  :host([data-open]) .overlay { opacity: 1; visibility: visible; pointer-events: auto; transition-delay: 0s; }
   .panel { width: min(560px, calc(100vw - 32px)); max-height: 70vh; display: flex; flex-direction: column; overflow: hidden; background: var(--background, #fff);
-    border: 1px solid var(--border, #e4e4e7); border-radius: 12px; box-shadow: var(--shadow-pop, 0 8px 30px rgba(0,0,0,.12)); animation: pop .12s ease-out; }
+    border: 1px solid var(--border, #e4e4e7); border-radius: 12px; box-shadow: var(--shadow-pop, 0 8px 30px rgba(0,0,0,.12));
+    transform: translateY(-6px) scale(.985); transition: transform var(--ex-dur) var(--ex-ease); }
+  :host([data-open]) .panel { transform: none; }
   .row { display: flex; align-items: center; gap: 10px; padding: 0 14px; border-bottom: 1px solid var(--border, #e4e4e7); }
   .row svg { width: 16px; height: 16px; flex: none; fill: none; stroke: var(--muted-foreground, #71717a); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
-  input { flex: 1; height: 48px; border: 0; outline: 0; background: transparent; color: inherit; font: inherit; font-size: 15px; }
+  input { flex: 1; min-width: 0; height: 52px; border: 0; outline: 0; background: transparent; color: inherit; font: inherit; font-size: 15px; }
   input::placeholder { color: var(--muted-foreground, #71717a); }
   .list { overflow-y: auto; padding: 6px; }
   .group { padding: 8px 10px 4px; font-size: 12px; font-weight: 500; color: var(--muted-foreground, #71717a); }
@@ -499,15 +549,21 @@ const PALETTE_CSS = `
   .empty { padding: 28px 12px; text-align: center; color: var(--muted-foreground, #71717a); }
   .foot { display: flex; gap: 14px; align-items: center; padding: 8px 14px; border-top: 1px solid var(--border, #e4e4e7); color: var(--muted-foreground, #71717a); font-size: 12px; }
   .foot span { display: inline-flex; align-items: center; gap: 6px; }
-  @keyframes fade { from { opacity: 0; } }
-  @keyframes pop { from { opacity: 0; transform: scale(.98) translateY(-4px); } }
-  @media (prefers-reduced-motion: reduce) { .overlay, .panel { animation: none; } }
+  .close { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 7px; border: 0; background: transparent; cursor: pointer; }
+  .close:hover { background: var(--muted); }
+  :focus-visible { outline: 2px solid var(--muted-foreground); outline-offset: -2px; }
+  .status { position: fixed; z-index: 2147483645; right: 20px; bottom: 20px; max-width: min(340px, calc(100vw - 40px));
+    padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--background);
+    color: var(--foreground); box-shadow: var(--shadow-pop); font: 13px/1.5 var(--font-sans);
+    opacity: 0; transform: translateY(4px); pointer-events: none; transition: opacity var(--ex-dur-fast), transform var(--ex-dur-fast); }
+  .status[data-visible] { opacity: 1; transform: none; }
+  @media (prefers-reduced-motion: reduce) { .overlay, .panel, .status { transition: none; transform: none; } }
 `;
 
 let palette = null; // { host, input, list, items, active, restore }
 
 function go(path) {
-  const link = document.querySelector(`a[href="${path}"]`);
+  const link = document.querySelector(`a[href="${CSS.escape(path)}"]`);
   if (link) { link.click(); return; }
   // Same-document navigation: X's router listens for popstate, so this swaps the route without reloading (no splash, no lost state)
   try {
@@ -515,29 +571,40 @@ function go(path) {
     window.dispatchEvent(new PopStateEvent('popstate', { state: history.state }));
   } catch { location.assign(path); }
 }
-const profilePath = () => (document.querySelector('a[data-testid="AppTabBar_Profile_Link"]') || {}).getAttribute?.('href') || '/home';
-const patch = (p) => ipcRenderer.invoke('exiter:set-settings', p);
+ipcRenderer.on('exiter:show-notifications', () => go('/notifications'));
+const profilePath = () => document.querySelector(PROFILE_LINK)?.getAttribute('href');
+const patch = async (settings, message) => {
+  try {
+    await ipcRenderer.invoke('exiter:set-settings', settings);
+    if (message) showStatus(message);
+  } catch {
+    showStatus('Couldn’t apply that setting. Try again.');
+  }
+};
 
 function buildCommands(query) {
   const dark = current && current.theme === 'dark';
+  const profile = profilePath();
   const cmds = [
     { group: 'Go to', label: 'Home', icon: 'house', run: () => go('/home') },
     { group: 'Go to', label: 'Explore', icon: 'search', run: () => go('/explore') },
     { group: 'Go to', label: 'Notifications', icon: 'bell', run: () => go('/notifications') },
     { group: 'Go to', label: 'Chat', icon: 'messageSquare', run: () => go('/i/chat') },
-    { group: 'Go to', label: 'Profile', icon: 'user', run: () => go(profilePath()) },
+    ...(profile ? [
+      { group: 'Go to', label: 'Profile', icon: 'user', run: () => go(profile) },
+      { group: 'Go to', label: 'Lists', icon: 'users', run: () => go(`${profile}/lists`) },
+    ] : []),
     { group: 'Go to', label: 'Bookmarks', icon: 'bookmark', run: () => go('/i/bookmarks') },
-    { group: 'Go to', label: 'Lists', icon: 'users', run: () => go(`${profilePath()}/lists`) },
     { group: 'Actions', label: 'New post', icon: 'squarePen', hint: `${MOD}${IS_MAC ? '⇧' : 'Shift+'}N`, run: () => { const b = document.querySelector('[data-testid="SideNav_NewTweet_Button"]'); b ? b.click() : go('/compose/post'); } },
     { group: 'Actions', label: 'Refresh timeline', icon: 'refreshCw', hint: `${MOD}R`, run: refreshTimeline },
-    { group: 'Actions', label: 'Scroll to top', icon: 'arrowUp', run: () => window.scrollTo({ top: 0, behavior: 'smooth' }) },
+    { group: 'Actions', label: 'Scroll to top', icon: 'arrowUp', run: scrollToTop },
     { group: 'Actions', label: 'Go back', icon: 'arrowLeft', hint: `${MOD}[`, run: () => history.back() },
     { group: 'Actions', label: 'Go forward', icon: 'arrowRight', hint: `${MOD}]`, run: () => history.forward() },
     { group: 'Settings', label: 'Open settings', icon: 'sliders', hint: `${MOD},`, run: () => ipcRenderer.send('exiter:open-settings') },
     { group: 'Settings', label: 'Check for updates', icon: 'refreshCw', run: () => ipcRenderer.send('exiter:check-updates') },
     { group: 'Settings', label: dark ? 'Switch to light theme' : 'Switch to dark theme', icon: dark ? 'sun' : 'moon', run: () => patch({ theme: dark ? 'light' : 'dark' }) },
-    { group: 'Settings', label: current && current.hideMetrics ? 'Show counts' : 'Hide counts', icon: 'chart', run: () => patch({ hideMetrics: !(current && current.hideMetrics) }) },
-    { group: 'Settings', label: current && current.hideAds ? 'Show promoted posts' : 'Hide promoted posts', icon: 'list', run: () => patch({ hideAds: !(current && current.hideAds) }) },
+    { group: 'Settings', label: current?.hideMetrics ? 'Show counts' : 'Hide counts', icon: 'chart', run: () => patch({ hideMetrics: !current?.hideMetrics }, current?.hideMetrics ? 'Engagement counts shown.' : 'Engagement counts hidden.') },
+    { group: 'Settings', label: current?.hideAds ? 'Show promoted posts' : 'Hide promoted posts', icon: 'list', run: () => patch({ hideAds: !current?.hideAds }, current?.hideAds ? 'Promoted posts shown.' : 'Promoted posts hidden.') },
   ];
   const q = query.trim();
   const words = q.toLowerCase().split(/\s+/).filter(Boolean);
@@ -592,23 +659,39 @@ function runActive(i) {
 }
 
 let warm = null; // the palette's DOM, built once at idle and reused; `palette` is only set while it is open
+let statusTimer;
+
+function showStatus(message) {
+  const { status } = ensureWarm();
+  clearTimeout(statusTimer);
+  status.textContent = message;
+  status.setAttribute('data-visible', '');
+  statusTimer = setTimeout(() => { status.removeAttribute('data-visible'); }, 3000);
+}
 
 function ensureWarm() {
   if (warm) return warm;
   const host = document.createElement('div');
   host.id = 'exiter-palette';
-  host.style.display = 'none';
   const root = host.attachShadow({ mode: 'open' });
   root.innerHTML = `<style>${PALETTE_CSS}</style>
-    <div class="overlay"><div class="panel" role="dialog" aria-modal="true" aria-label="Command palette">
+    <div class="overlay" inert><div class="panel" role="dialog" aria-modal="true" aria-label="Command palette">
       <div class="row"><svg viewBox="0 0 24 24" aria-hidden="true">${ICONS.search}</svg>
-        <input type="text" role="combobox" aria-expanded="true" aria-controls="list" aria-autocomplete="list" placeholder="Type a command or search…" spellcheck="false" autocomplete="off"><kbd>esc</kbd></div>
+        <input type="text" role="combobox" aria-label="Find a command or search X" aria-expanded="true" aria-controls="list" aria-autocomplete="list" placeholder="Type a command or search…" spellcheck="false" autocomplete="off">
+        <button type="button" class="close" aria-label="Close command palette" title="Close (Esc)"><svg viewBox="0 0 24 24" aria-hidden="true">${ICONS.x}</svg></button></div>
       <div class="list" id="list" role="listbox"></div>
       <div class="foot"><span><kbd>↑</kbd><kbd>↓</kbd> Navigate</span><span><kbd>↵</kbd> Select</span></div>
-    </div></div>`;
+    </div></div><div class="status" role="status"></div>`;
   (document.body || document.documentElement).appendChild(host);
-  warm = { host, input: root.querySelector('input'), list: root.querySelector('.list') };
-  root.querySelector('.overlay').addEventListener('mousedown', (e) => { if (e.target.classList.contains('overlay')) closePalette(); });
+  const overlay = root.querySelector('.overlay');
+  const close = root.querySelector('.close');
+  warm = { host, overlay, input: root.querySelector('input'), list: root.querySelector('.list'), status: root.querySelector('.status') };
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) closePalette(); });
+  close.addEventListener('click', closePalette);
+  overlay.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closePalette(); }
+    if (e.key === 'Tab') { e.preventDefault(); (e.target === close ? warm.input : close).focus(); }
+  });
   warm.input.addEventListener('input', () => { if (!palette) return; palette.active = 0; renderPalette(); });
   warm.input.addEventListener('keydown', (e) => {
     if (!palette) return;
@@ -616,8 +699,6 @@ function ensureWarm() {
     if (e.key === 'ArrowDown') { e.preventDefault(); if (n) { palette.active = (palette.active + 1) % n; markActive(); } }
     else if (e.key === 'ArrowUp') { e.preventDefault(); if (n) { palette.active = (palette.active - 1 + n) % n; markActive(); } }
     else if (e.key === 'Enter') { e.preventDefault(); runActive(palette.active); }
-    else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); closePalette(); }
-    else if (e.key === 'Tab') { e.preventDefault(); } // focus stays in the palette while it is open
   });
   return warm;
 }
@@ -627,7 +708,8 @@ function openPalette() {
   const w = ensureWarm();
   palette = { host: w.host, input: w.input, list: w.list, items: [], active: 0, restore: document.activeElement };
   w.input.value = '';
-  w.host.style.display = ''; // display none -> block restarts the open animation
+  w.host.setAttribute('data-open', '');
+  w.overlay.inert = false;
   renderPalette();
   w.input.focus();
 }
@@ -636,11 +718,13 @@ function closePalette() {
   if (!palette) return;
   const { host, restore } = palette;
   palette = null;
-  host.style.display = 'none';
+  warm.overlay.inert = true;
+  host.removeAttribute('data-open');
   if (restore && typeof restore.focus === 'function' && document.contains(restore)) restore.focus();
 }
 
 window.addEventListener('keydown', (e) => {
+  if (location.origin !== 'https://x.com' || window !== window.top) return;
   if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'k') {
     e.preventDefault(); e.stopPropagation();
     palette ? closePalette() : openPalette();

@@ -20,9 +20,8 @@ button[aria-label="Manage timelines"], button[data-exiter-refresh] {
 button[aria-label="Manage timelines"]:hover, button[data-exiter-refresh]:hover { background: var(--muted) !important; color: var(--foreground) !important; }
 button[aria-label="Manage timelines"] svg, button[data-exiter-refresh] svg { width: 16px !important; height: 16px !important; }
 button[data-exiter-refresh] svg { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
-button[data-exiter-refresh][data-spinning] svg { animation: ex-spin 0.7s ease-in-out; }
+button[data-exiter-refresh][aria-busy="true"] { color: var(--foreground) !important; cursor: progress; }
 @keyframes ex-spin { to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) { button[data-exiter-refresh][data-spinning] svg { animation: none; } }
 
 /* The header action container X gives the "+" is a column; make it a row so refresh sits beside it */
 [data-exiter-hdr-actions] { flex-direction: row !important; width: auto !important; align-items: center !important; padding-right: 8px; gap: 2px; }

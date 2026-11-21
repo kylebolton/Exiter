@@ -4,6 +4,7 @@ contextBridge.exposeInMainWorld('exiter', {
   set: (patch) => ipcRenderer.invoke('exiter:set-settings', patch),
   reset: () => ipcRenderer.invoke('exiter:reset-settings'),
   version: () => ipcRenderer.invoke('exiter:get-version'),
+  testNotification: () => ipcRenderer.invoke('exiter:test-notification'),
   checkForUpdates: () => ipcRenderer.send('exiter:check-updates'),
   onChange: (cb) => ipcRenderer.on('exiter:settings', (_e, s) => cb(s)),
 });

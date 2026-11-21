@@ -70,7 +70,18 @@ function checkNow() {
     return;
   }
   if (engine === 'sparkle') sparkle.checkForUpdates();           // Sparkle shows its own window
-  else if (engine === 'electron-updater') { interactive = true; eu.checkForUpdates().catch(() => {}); }
+  else if (engine === 'electron-updater') {
+    if (interactive) return;
+    interactive = true;
+    eu.checkForUpdates().then((result) => {
+      if (result === null && interactive) {
+        interactive = false;
+        dialog.showMessageBox({ type: 'info', message: 'Updates are unavailable for this installation.' });
+      }
+    }).catch(() => { interactive = false; });
+  } else {
+    dialog.showMessageBox({ type: 'info', message: 'The updater is unavailable. Try reopening Exiter.' });
+  }
 }
 
 module.exports = { start, checkNow, setAutomatic, isSupported, maybeCheckOnLaunch };

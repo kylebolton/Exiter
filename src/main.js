@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, globalShortcut, shell, nativeImage, nativeTheme, session, ipcMain } = require('electron');
+const { app, BrowserWindow, Tray, Menu, Notification, globalShortcut, shell, nativeImage, nativeTheme, session, ipcMain } = require('electron');
 const fs = require('fs');
 const path = require('path');
 const Store = require('electron-store');
@@ -9,7 +9,7 @@ const DEFAULT_SETTINGS = {
   feedWidth: 'fill', mediaMax: 620,
   fontFamily: 'geist', lineHeight: 'normal', uiZoom: 100, caps: 'names',
   hideAds: true, hideRightRail: true, hideSuggestions: true, hideFloating: true, hideLogo: true, hideMetrics: false,
-  launchAtLogin: false, autoUpdate: true,
+  launchAtLogin: false, autoUpdate: true, desktopNotifications: false,
   nav: {
     home: true, explore: true, notifications: true, chat: true, profile: true, more: true,
     bookmarks: false, lists: false, communities: false, calls: false, history: false, articles: false, premium: false, grok: false, creator: false, jobs: false,
@@ -56,11 +56,11 @@ async function applyThemeCookie() {
   nativeTheme.themeSource = dark ? 'dark' : 'light';
   const ses = session.fromPartition('persist:exiter');
   const exp = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 365;
+  for (const c of await ses.cookies.get({ name: 'night_mode' })) {
+    await ses.cookies.remove(`https://${c.domain.replace(/^\./, '')}`, 'night_mode');
+  }
   for (const url of ['https://x.com', 'https://twitter.com']) {
     const host = new URL(url).hostname;
-    for (const c of await ses.cookies.get({ name: 'night_mode' })) {
-      await ses.cookies.remove(`https://${c.domain.replace(/^\./, '')}`, 'night_mode');
-    }
     await ses.cookies.set({ url, domain: `.${host}`, name: 'night_mode', value: dark ? '2' : '0', path: '/', secure: true, expirationDate: exp });
   }
 }
@@ -79,28 +79,110 @@ function broadcastSettings() {
 }
 
 ipcMain.handle('exiter:get-settings', () => getSettings());
-ipcMain.handle('exiter:set-settings', async (_e, patch) => {
+let themeUpdate = Promise.resolve();
+async function saveSettings(next) {
   const before = getSettings();
-  const next = { ...before, ...patch, nav: { ...before.nav, ...(patch.nav || {}) } };
   store.set('settings', next);
-  if (next.theme !== before.theme) {
-    await applyThemeCookie();
-    if (win && !win.isDestroyed()) win.webContents.reloadIgnoringCache();
-  }
   applyZoom();
   if (next.autoUpdate !== before.autoUpdate) updater.setAutomatic(next.autoUpdate);
+  if (!next.desktopNotifications && activityNotification) activityNotification.close();
   broadcastSettings();
   rebuildTrayMenu();
-  return next;
-});
-ipcMain.handle('exiter:reset-settings', async () => {
-  store.set('settings', DEFAULT_SETTINGS);
-  await applyThemeCookie();
-  if (win && !win.isDestroyed()) win.webContents.reloadIgnoringCache();
-  broadcastSettings();
-  rebuildTrayMenu();
+  if (next.theme !== before.theme) {
+    const update = themeUpdate.then(async () => {
+      await applyThemeCookie();
+      if (win && !win.isDestroyed()) {
+        win.setBackgroundColor(getSettings().theme === 'dark' ? '#09090b' : '#ffffff');
+        if (!isMac) win.setTitleBarOverlay(titleBarOverlay());
+        if (win.webContents.getURL().startsWith('file:')) showOffline();
+        else win.webContents.reloadIgnoringCache();
+      }
+    });
+    themeUpdate = update.catch(() => {});
+    await update;
+  }
   return getSettings();
+}
+ipcMain.handle('exiter:set-settings', (_e, patch) => {
+  const before = getSettings();
+  return saveSettings({ ...before, ...patch, nav: { ...before.nav, ...patch.nav } });
 });
+ipcMain.handle('exiter:reset-settings', () => saveSettings(DEFAULT_SETTINGS));
+
+const iconPath = path.join(__dirname, '..', 'assets', 'icon.png');
+let activityNotification = null;
+let testNotification = null;
+
+function isMainXFrame(event) {
+  const wc = win?.webContents;
+  const frame = event.senderFrame;
+  return !!wc && event.sender === wc && frame === wc.mainFrame
+    && frame?.url.startsWith('https://x.com/');
+}
+
+function openNotifications() {
+  showWindow({ refresh: false });
+  if (win.webContents.getURL().startsWith('https://x.com/')) {
+    win.webContents.send('exiter:show-notifications');
+  } else {
+    win.loadURL('https://x.com/notifications').catch(() => {});
+  }
+}
+
+function showNotification({ test = false } = {}) {
+  if (!Notification.isSupported()) return Promise.resolve('Desktop notifications are unavailable on this system.');
+  return new Promise((resolve) => {
+    const notification = new Notification({
+      title: 'Exiter',
+      body: test ? 'Desktop notifications are working.' : 'You have new activity on X.',
+      icon: iconPath,
+      silent: true,
+    });
+    if (test) {
+      testNotification?.close();
+      testNotification = notification;
+    } else {
+      activityNotification?.close();
+      activityNotification = notification;
+    }
+    const clear = () => {
+      if (activityNotification === notification) activityNotification = null;
+      if (testNotification === notification) testNotification = null;
+    };
+    const timeout = setTimeout(() => resolve('Check your system notification settings for Exiter.'), 4000);
+    const finish = (message) => { clearTimeout(timeout); resolve(message); };
+    notification.once('close', clear);
+    notification.once('click', test ? openSettings : openNotifications);
+    notification.once('show', () => finish('Test notification sent.'));
+    notification.once('failed', () => {
+      clear();
+      finish('Couldn’t show a notification. Check your system settings for Exiter.');
+    });
+    notification.show();
+  });
+}
+
+ipcMain.on('exiter:unread-increased', (event) => {
+  if (!isMainXFrame(event) || !getSettings().desktopNotifications || BrowserWindow.getFocusedWindow()) return;
+  showNotification().catch((err) => console.warn('[notifications]', err.message));
+});
+
+ipcMain.handle('exiter:test-notification', (event) => {
+  if (!settingsWin || event.sender !== settingsWin.webContents) return;
+  return showNotification({ test: true });
+});
+
+function titleBarOverlay() {
+  const dark = getSettings().theme === 'dark';
+  return { color: dark ? '#09090b' : '#ffffff', symbolColor: dark ? '#fafafa' : '#18181b', height: 36 };
+}
+
+let retryURL = HOME;
+function showOffline() {
+  win.loadFile(path.join(__dirname, 'offline.html'), {
+    query: { dark: getSettings().theme === 'dark' ? '1' : '', retry: retryURL },
+  }).catch(() => {});
+}
 
 // The Settings window is built hidden shortly after launch and hidden (not destroyed) on close, so opening it is instant.
 let settingsReady = false;
@@ -111,7 +193,7 @@ function buildSettingsWindow() {
   settingsReady = false;
   settingsWin = new BrowserWindow({
     show: false,
-    width: 560, height: 720, minWidth: 480, minHeight: 480,
+    width: 680, height: 760, minWidth: 480, minHeight: 480,
     title: 'Exiter Settings',
     backgroundColor: getSettings().theme === 'dark' ? '#09090b' : '#ffffff',
     titleBarStyle: isMac ? 'hiddenInset' : 'default',
@@ -146,10 +228,10 @@ function createWindow() {
     show: false,
     backgroundColor: getSettings().theme === 'dark' ? '#09090b' : '#ffffff',
     title: 'Exiter',
-    icon: path.join(__dirname, '..', 'assets', 'icon.png'),
+    icon: iconPath,
     titleBarStyle: isMac ? 'hiddenInset' : 'hidden',
     trafficLightPosition: { x: 12, y: 20 },
-    ...(isMac ? {} : { titleBarOverlay: { color: '#ffffff', symbolColor: '#0f1419', height: 36 } }),
+    ...(isMac ? {} : { titleBarOverlay: titleBarOverlay() }),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -166,7 +248,7 @@ function createWindow() {
 
   // Reopen where the user left off (route is saved by preload.js), but only for plain x.com paths
   const last = store.get('lastRoute');
-  win.loadURL(typeof last === 'string' && /^\/[A-Za-z0-9_\/?=&%.+-]*$/.test(last) && !last.startsWith('//') ? `https://x.com${last}` : HOME);
+  win.loadURL(typeof last === 'string' && /^\/[A-Za-z0-9_\/?=&%.+-]*$/.test(last) && !last.startsWith('//') ? `https://x.com${last}` : HOME).catch(() => {});
   if (process.env.EXITER_DEBUG_PORT) console.log('EXITER_WINDOW_ID', win.getMediaSourceId().split(':')[1]);
 
   const wc = win.webContents;
@@ -176,7 +258,8 @@ function createWindow() {
   // Recovery: a failed load shows a themed offline page that retries on its own; a crashed renderer reloads
   wc.on('did-fail-load', (_e, code, _desc, url, isMainFrame) => {
     if (!isMainFrame || code === -3 /* aborted: normal during redirects */ || url.startsWith('file:')) return;
-    win.loadFile(path.join(__dirname, 'offline.html'), { query: { dark: getSettings().theme === 'dark' ? '1' : '' } });
+    retryURL = url.startsWith('https://x.com/') ? url : HOME;
+    showOffline();
   });
   wc.on('render-process-gone', () => { if (win && !win.isDestroyed()) win.loadURL(HOME); });
 
@@ -201,32 +284,40 @@ function createWindow() {
 }
 
 function refreshTimeline() {
-  if (win && !win.isDestroyed()) win.webContents.send('exiter:do-refresh');
+  if (!win || win.isDestroyed()) return;
+  if (win.webContents.getURL().startsWith('file:')) win.loadURL(retryURL).catch(() => {});
+  else win.webContents.send('exiter:do-refresh');
+}
+
+function reloadPage() {
+  if (!win || win.isDestroyed()) return;
+  if (win.webContents.getURL().startsWith('file:')) win.loadURL(retryURL).catch(() => {});
+  else win.webContents.reloadIgnoringCache();
 }
 ipcMain.on('exiter:press-refresh-key', () => {
   if (process.env.EXITER_DEBUG_PORT) console.log('EXITER press-refresh-key received');
   if (!win || win.isDestroyed()) return;
   win.webContents.focus();
-  for (const type of ['keyDown', 'char', 'keyUp']) win.webContents.sendInputEvent({ type, keyCode: '.', ...(type === 'char' ? {} : {}) });
+  for (const type of ['keyDown', 'char', 'keyUp']) win.webContents.sendInputEvent({ type, keyCode: '.' });
 });
 ipcMain.on('exiter:open-settings', openSettings);
 ipcMain.on('exiter:check-updates', () => updater.checkNow());
 ipcMain.handle('exiter:get-version', () => ({ version: app.getVersion(), updatesEnabled: updater.isSupported() }));
-ipcMain.on('exiter:reload-page', () => { if (win && !win.isDestroyed()) win.webContents.reloadIgnoringCache(); });
+ipcMain.on('exiter:reload-page', reloadPage);
 
 let hiddenAt = 0;
-function showWindow() {
+function showWindow({ refresh = true } = {}) {
   if (!win) createWindow();
   if (win.isMinimized()) win.restore();
   // Back after a while away: refresh so the first thing seen is current, not what was there when it was hidden
-  if (hiddenAt && Date.now() - hiddenAt > 60000) refreshTimeline();
+  if (refresh && hiddenAt && Date.now() - hiddenAt > 60000) refreshTimeline();
   hiddenAt = 0;
   win.show();
   win.focus();
 }
 
 function toggleWindow() {
-  if (win && win.isVisible() && win.isFocused()) win.hide();
+  if (win && win.isVisible() && win.isFocused()) { hiddenAt = Date.now(); win.hide(); }
   else showWindow();
 }
 
@@ -242,11 +333,11 @@ function trayMenu() {
     { label: 'New Post', accelerator: 'CmdOrCtrl+Shift+N', click: newPost },
     { label: 'Home', click: () => { showWindow(); win.webContents.loadURL(HOME); } },
     { label: 'Refresh Timeline', accelerator: 'CmdOrCtrl+R', click: () => { showWindow(); refreshTimeline(); } },
-    { label: 'Reload Page', accelerator: 'CmdOrCtrl+Shift+R', click: () => win && win.webContents.reloadIgnoringCache() },
+    { label: 'Reload Page', accelerator: 'CmdOrCtrl+Shift+R', click: reloadPage },
     { type: 'separator' },
     {
       label: 'Hide Ads & Upsells', type: 'checkbox', checked: st.hideAds,
-      click: (item) => { store.set('settings', { ...getSettings(), hideAds: item.checked }); broadcastSettings(); },
+      click: (item) => saveSettings({ ...getSettings(), hideAds: item.checked }),
     },
     { label: 'Settings…', accelerator: 'CmdOrCtrl+,', click: openSettings },
     { label: 'Check for Updates…', click: () => updater.checkNow() },
@@ -282,10 +373,10 @@ function buildAppMenu() {
     {
       label: 'View',
       submenu: [
-        { label: 'Back', accelerator: 'CmdOrCtrl+[', click: () => win && win.webContents.goBack() },
-        { label: 'Forward', accelerator: 'CmdOrCtrl+]', click: () => win && win.webContents.goForward() },
+        { label: 'Back', accelerator: 'CmdOrCtrl+[', click: () => win?.webContents.navigationHistory.goBack() },
+        { label: 'Forward', accelerator: 'CmdOrCtrl+]', click: () => win?.webContents.navigationHistory.goForward() },
         { label: 'Refresh Timeline', accelerator: 'CmdOrCtrl+R', click: refreshTimeline },
-        { label: 'Reload Page', accelerator: 'CmdOrCtrl+Shift+R', click: () => win && win.webContents.reloadIgnoringCache() },
+        { label: 'Reload Page', accelerator: 'CmdOrCtrl+Shift+R', click: reloadPage },
         { type: 'separator' },
         { role: 'resetZoom' }, { role: 'zoomIn' }, { role: 'zoomOut' }, { type: 'separator' },
         { role: 'togglefullscreen' }, { role: 'toggleDevTools' },
@@ -302,6 +393,7 @@ if (!app.requestSingleInstanceLock()) app.quit();
 app.on('second-instance', showWindow);
 
 app.whenReady().then(async () => {
+  if (process.platform === 'win32') app.setAppUserModelId('me.kylebolton.exiter');
   // Open connections to X's hosts before the first request needs them
   try { for (const h of ['https://x.com', 'https://api.x.com', 'https://pbs.twimg.com', 'https://abs.twimg.com', 'https://video.twimg.com']) session.fromPartition('persist:exiter').preconnect({ url: h, numSockets: 2 }); } catch {}
   if (isMac) app.dock.setIcon(path.join(__dirname, '..', 'assets', 'icon.png'));

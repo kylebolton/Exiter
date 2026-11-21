@@ -1,7 +1,7 @@
 /* Motion: user-triggered feedback only, plus one orchestrated moment (the route change). All of it off under reduced motion. */
 
 /* Route change: when preload sees the URL change it sets html[data-ex-route-anim] for one frame-ish; the column eases in */
-@keyframes ex-route-in { from { opacity: 0; translate: 0 6px; } }
+@keyframes ex-route-in { from { opacity: 0.88; translate: 0 4px; } }
 html[data-ex-route-anim] [data-testid="primaryColumn"] > div > div:last-child { animation: ex-route-in var(--ex-dur) var(--ex-ease); }
 
 /* Tabs: the selected underline grows from the centre instead of snapping; label colour eases */
@@ -36,7 +36,10 @@ button[aria-label^="New posts are available"][data-ex-tick] [data-testid="pillLa
 @media (prefers-reduced-motion: reduce) {
   html[data-ex-route-anim] [data-testid="primaryColumn"] > div > div:last-child, [role="tab"] div[style*="background-color"],
   [data-testid="unlike"] svg, [data-testid="removeBookmark"] svg, [data-testid="unretweet"] svg,
-  button[aria-label^="New posts are available"][data-ex-tick] [data-testid="pillLabel"], [role="progressbar"] { animation: none !important; }
-  nav a[role="link"], article [role="group"] button, article [role="group"] a, button[data-exiter-refresh] { transition: none !important; }
-  nav a[role="link"]:active, article [role="group"] button:active, article [role="group"] a:active, button[data-exiter-refresh]:active { scale: none; }
+  button[aria-label^="New posts are available"][data-ex-tick] [data-testid="pillLabel"], [role="progressbar"],
+  button[data-exiter-refresh][data-spinning] svg { animation: none !important; }
+  header[role="banner"] nav :is(a, button) > div, [role="tab"], [role="tab"] :is(span, div[dir]),
+  nav a[role="link"], article [role="group"] :is(button, a), button[data-exiter-refresh],
+  [data-testid$="-follow"], [data-testid$="-unfollow"], [data-testid="tweetButtonInline"], [data-testid="tweetButton"],
+  [data-testid="SideNav_NewTweet_Button"] { transition: none !important; scale: none !important; }
 }

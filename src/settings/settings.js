@@ -5,6 +5,7 @@ const NAV = [
 ];
 const ACCENTS = { zinc: '#71717a', blue: '#2563eb', violet: '#7c3aed', rose: '#e11d48', green: '#16a34a', orange: '#ea580c' };
 
+let versionInfo;
 const GROUPS = [
   { title: 'Appearance', rows: [
     { type: 'seg', key: 'theme', label: 'Theme', desc: 'Reloads the page when changed.', options: [['light', 'Light'], ['dark', 'Dark']] },
@@ -35,73 +36,166 @@ const GROUPS = [
   { title: 'App', rows: [
     { type: 'toggle', key: 'launchAtLogin', label: 'Launch at login' },
   ] },
+  { title: 'Notifications', rows: [
+    { type: 'toggle', key: 'desktopNotifications', label: 'Desktop notifications', desc: 'Show a quiet alert for new X activity while Exiter is open in the background.' },
+    { type: 'button', key: 'testNotification', label: 'Preview a notification', button: 'Send test',
+      desc: 'Uses your system notification settings.', action: () => window.exiter.testNotification() },
+  ] },
   { title: 'Updates', rows: [
     { type: 'toggle', key: 'autoUpdate', label: 'Check for updates automatically' },
-    { type: 'button', label: 'Check for updates', desc: '', button: 'Check now', action: () => window.exiter.checkForUpdates(), versionDesc: true },
+    { type: 'button', key: 'checkUpdates', label: 'Check for updates', button: 'Check now', action: () => window.exiter.checkForUpdates(), versionDesc: true },
   ] },
 ];
 
 const root = document.getElementById('root');
-let state = null;
+const status = document.getElementById('status');
+const reset = document.getElementById('reset');
+const confirmation = document.getElementById('confirm-reset');
+const bindings = [];
+let state;
+let statusTimeout;
+
 const el = (tag, attrs = {}, ...kids) => {
-  const e = Object.assign(document.createElement(tag), attrs);
-  kids.flat().forEach((k) => e.append(k));
-  return e;
+  const element = Object.assign(document.createElement(tag), attrs);
+  element.append(...kids.flat());
+  return element;
 };
 
+function showStatus(message, persistent = false) {
+  clearTimeout(statusTimeout);
+  status.textContent = message;
+  status.toggleAttribute('data-visible', !!message);
+  if (message && !persistent) statusTimeout = setTimeout(() => showStatus(''), 2500);
+}
+
+function update(next) {
+  if (!next) return;
+  state = next;
+  document.documentElement.dataset.exTheme = next.theme;
+  for (const binding of bindings) binding();
+}
+
+async function act(action, message, restore) {
+  try {
+    const result = await action();
+    if (typeof result === 'string' || message) showStatus(result || message);
+  } catch {
+    restore?.();
+    showStatus('Couldn’t complete that action. Try again.', true);
+  }
+}
+
 function control(row) {
-  if (row.type === 'toggle' || row.type === 'nav') {
-    const nav = row.type === 'nav';
-    const input = el('input', { type: 'checkbox', checked: nav ? state.nav[row.key] : state[row.key] });
-    input.addEventListener('change', () => window.exiter.set(nav ? { nav: { [row.key]: input.checked } } : { [row.key]: input.checked }));
+  const { key, type } = row;
+  const labelId = key + '-label';
+  const value = () => type === 'nav' ? state?.nav[key] : state?.[key];
+  const save = (next, restore) => {
+    if (next === value()) return;
+    const patch = type === 'nav' ? { nav: { [key]: next } } : { [key]: next };
+    act(() => window.exiter.set(patch), 'Saved', restore);
+  };
+  if (type === 'toggle' || type === 'nav') {
+    const input = el('input', { type: 'checkbox' });
+    input.setAttribute('role', 'switch');
+    input.setAttribute('aria-labelledby', labelId);
+    const sync = () => { input.checked = !!value(); };
+    bindings.push(sync);
+    input.addEventListener('change', () => save(input.checked, sync));
     return el('label', { className: 'switch' }, input, el('i'));
   }
-  if (row.type === 'seg') {
-    const wrap = el('div', { className: 'seg' });
-    for (const [v, label] of row.options) {
-      const b = el('button', { textContent: label, type: 'button' });
-      b.setAttribute('aria-pressed', String(state[row.key] === v));
-      b.addEventListener('click', () => window.exiter.set({ [row.key]: v }));
-      wrap.append(b);
+  if (type === 'seg' || type === 'swatch') {
+    const options = row.options || Object.keys(ACCENTS).map(key => [key, key[0].toUpperCase() + key.slice(1)]);
+    const group = el('div', { className: type });
+    group.setAttribute('role', 'group');
+    group.setAttribute('aria-labelledby', labelId);
+    for (const [option, label] of options) {
+      const button = el('button', { type: 'button', textContent: type === 'seg' ? label : '', title: label });
+      if (type === 'swatch') {
+        button.style.setProperty('--swatch', ACCENTS[option]);
+        button.setAttribute('aria-label', label);
+      }
+      bindings.push(() => button.setAttribute('aria-pressed', String(value() === option)));
+      button.addEventListener('click', () => save(option));
+      group.append(button);
     }
-    return wrap;
+    return group;
   }
-  if (row.type === 'swatch') {
-    const wrap = el('div', { className: 'sw' });
-    for (const [k, color] of Object.entries(ACCENTS)) {
-      const b = el('button', { type: 'button', title: k });
-      b.style.background = color;
-      b.setAttribute('aria-pressed', String(state.accent === k));
-      b.addEventListener('click', () => window.exiter.set({ accent: k }));
-      wrap.append(b);
-    }
-    return wrap;
+  if (type === 'range') {
+    const output = el('output');
+    const input = el('input', { id: key, type: 'range', min: row.min, max: row.max, step: row.step });
+    input.setAttribute('aria-labelledby', labelId);
+    output.setAttribute('for', key);
+    const preview = () => {
+      output.value = input.value + row.unit;
+      input.setAttribute('aria-valuetext', output.value);
+    };
+    let applied;
+    const sync = () => { applied = value(); input.value = applied; preview(); };
+    bindings.push(() => { if (applied !== value()) sync(); });
+    input.addEventListener('input', preview);
+    input.addEventListener('change', () => save(Number(input.value), sync));
+    return el('div', { className: 'range' }, input, output);
   }
-  if (row.type === 'button') {
-    const b = el('button', { type: 'button', className: 'btn', textContent: row.button });
-    b.addEventListener('click', row.action);
-    return b;
-  }
-  if (row.type === 'range') {
-    const out = el('output', { textContent: state[row.key] + row.unit });
-    const input = el('input', { type: 'range', min: row.min, max: row.max, step: row.step, value: state[row.key] });
-    input.addEventListener('input', () => { out.textContent = input.value + row.unit; });
-    input.addEventListener('change', () => window.exiter.set({ [row.key]: Number(input.value) }));
-    return el('div', { className: 'range' }, input, out);
-  }
+
+  const button = el('button', { className: 'btn', type: 'button', textContent: row.button });
+  button.setAttribute('aria-describedby', key + '-description');
+  button.addEventListener('click', async () => {
+    if (button.getAttribute('aria-busy') === 'true') return;
+    button.setAttribute('aria-busy', 'true');
+    if (key === 'testNotification') button.textContent = 'Sending…';
+    await act(row.action);
+    button.removeAttribute('aria-busy');
+    button.textContent = row.button;
+  });
+  return button;
 }
 
 function render() {
-  const scroll = window.scrollY;
-  root.replaceChildren(...GROUPS.map((g) => el('section', {}, el('h2', { textContent: g.title }),
-    g.rows.map((r) => el('div', { className: 'row' },
-      el('div', { className: 't' }, el('b', { textContent: r.label }), r.versionDesc ? el('span', { textContent: versionInfo ? `Exiter ${versionInfo.version}${versionInfo.updatesEnabled ? '' : ' (updates are off in development builds)'}` : '' }) : (r.desc ? el('span', { textContent: r.desc }) : '')),
-      control(r))))));
-  window.scrollTo(0, scroll);
+  const navigation = document.getElementById('sections');
+  for (const group of GROUPS) {
+    const id = group.title.toLowerCase();
+    navigation.append(el('a', { href: '#' + id, textContent: group.title }));
+    const heading = el('h2', { id: id + '-heading', textContent: group.title });
+    const section = el('section', { id }, heading);
+    section.setAttribute('aria-labelledby', heading.id);
+    const rows = el('div', { className: 'rows' });
+    for (const row of group.rows) {
+      const desc = row.versionDesc ? 'Exiter ' + versionInfo.version
+        + (versionInfo.updatesEnabled ? '' : ' · Updates are off in development builds') : row.desc;
+      rows.append(el('div', { className: 'row' },
+        el('div', { className: 'label' },
+          el('span', { id: row.key + '-label', className: 'name', textContent: row.label }),
+          desc ? el('span', { id: row.key + '-description', className: 'description', textContent: desc }) : ''),
+        control(row)));
+    }
+    section.append(rows);
+    root.append(section);
+  }
+  const isMac = /Mac/i.test(navigator.platform);
+  document.getElementById('shortcuts').textContent = isMac ? '⌘⇧X Show or hide · ⌘⇧N New post'
+    : 'Ctrl+Shift+X Show or hide · Ctrl+Shift+N New post';
+  reset.disabled = false;
+  const syncNavigation = () => {
+    for (const link of navigation.children) {
+      if (link.hash === location.hash) link.setAttribute('aria-current', 'location');
+      else link.removeAttribute('aria-current');
+    }
+  };
+  window.addEventListener('hashchange', syncNavigation);
+  syncNavigation();
 }
 
-document.getElementById('reset').addEventListener('click', () => window.exiter.reset());
-window.exiter.onChange((s) => { state = s; render(); });
-let versionInfo = null;
-window.exiter.version().then((v) => { versionInfo = v; render(); });
-window.exiter.get().then((s) => { state = s; render(); });
+reset.addEventListener('click', () => {
+  confirmation.returnValue = '';
+  confirmation.showModal();
+});
+confirmation.addEventListener('close', () => {
+  if (confirmation.returnValue === 'reset') act(() => window.exiter.reset(), 'Settings reset');
+  reset.focus();
+});
+window.exiter.onChange(update);
+Promise.all([window.exiter.get(), window.exiter.version()]).then(([settings, version]) => {
+  versionInfo = version;
+  render();
+  update(state || settings);
+}).catch(() => showStatus('Couldn’t load settings.', true));
