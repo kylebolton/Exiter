@@ -182,12 +182,13 @@ function tagComposerInput() {
   document.querySelectorAll('[data-testid="tweetTextarea_0_label"]:not([data-exiter-tagged])').forEach((label) => {
     label.setAttribute('data-exiter-tagged', '1');
     for (let e = label.parentElement, i = 0; e && i < 16; e = e.parentElement, i++) {
+      // The overlay gives the dialog card its own border. Only the input should respond to editor focus.
+      if (e.matches('[role="dialog"], [role="dialog"] > *')) break;
       const cs = getComputedStyle(e);
       if (parseFloat(cs.borderTopWidth) > 0 && cs.borderTopStyle !== 'none') {
         e.setAttribute('data-exiter-input', '1');
-        if (!label.closest('[role="dialog"]')) break;   // the compose dialog nests more than one bordered wrapper; round them all
+        break;
       }
-      if (e.getAttribute('role') === 'dialog') break;
     }
   });
 }
@@ -288,6 +289,8 @@ const NO_RESTORE = /^\/(login|logout|i\/flow|i\/oauth2|compose|settings|account|
 function trackRoute() {
   if (location.href === lastHref) return;
   lastHref = location.href;
+  startNavigationTiming();
+  clearTimeout(readingTimer);
   const root = document.documentElement;
   root.setAttribute('data-ex-route-anim', '');
   clearTimeout(routeTimer);
@@ -354,7 +357,12 @@ function schedule() {
   queued = true;
   requestAnimationFrame(() => {
     queued = false;
-    tagMediaViewer(); tagProfileHeader(); sweepAds(); sweepIcons(); sweepBadges(); ensurePostIcon(); sweepMenuIcons(); tagShowPosts(); tagComposerInput(); ensureRefreshButton(); releaseAutofocus(); tagQuoteCards(); tagQuotedPosts(); tagPills(); trackRoute(); tickPill();
+    trackRoute();
+    syncWorkspace();
+    syncTimelineLoading();
+    restoreReadingPosition();
+    warmGallery();
+    tagMediaViewer(); tagProfileHeader(); sweepAds(); sweepIcons(); markPostActionChanges(); sweepBadges(); ensurePostIcon(); sweepMenuIcons(); tagShowPosts(); tagComposerInput(); ensureRefreshButton(); releaseAutofocus(); tagQuoteCards(); tagQuotedPosts(); tagPills(); tickPill();
     // Throttle rather than continually postponing layout work while the timeline streams in.
     if (uncapTimer === null) uncapTimer = setTimeout(() => { uncapTimer = null; uncapColumn(); }, 100);
   });
@@ -364,7 +372,9 @@ window.addEventListener('resize', schedule);
 window.addEventListener('popstate', schedule);
 
 window.addEventListener('DOMContentLoaded', () => {
-  new MutationObserver(schedule).observe(document.body, { childList: true, subtree: true });
+  new MutationObserver(schedule).observe(document.body, {
+    childList: true, subtree: true, attributes: true, attributeFilter: ['data-testid', 'aria-selected', 'href'],
+  });
   schedule();
   if (location.origin === 'https://x.com' && window === window.top) {
     new MutationObserver(scheduleUnread).observe(document.body, {
@@ -373,6 +383,297 @@ window.addEventListener('DOMContentLoaded', () => {
     scheduleUnread();
   }
 });
+
+/* ---------- Reading position, keyboard navigation, and pinned destinations ---------- */
+const PRIMARY = '[data-testid="primaryColumn"]';
+const TIMELINE = '[aria-label^="Timeline:"]';
+const POST_PATH = /^\/[A-Za-z0-9_]{1,15}\/status\/\d+$/;
+const FEED_PATH = /^\/(?:home|search|i\/(?:bookmarks|lists\/\d+))$/;
+const EDITING = 'input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"]';
+const isXWindow = location.origin === 'https://x.com' && window === window.top;
+let workspace = { pins: [] };
+let workspaceAccount = '';
+let recentPositions = new Map();
+let readingTimer;
+let readingRestore;
+
+function readingView() {
+  if (!FEED_PATH.test(location.pathname)) return null;
+  const route = location.pathname + location.search;
+  if (route.length > 600) return null;
+  const tab = document.querySelector(`${PRIMARY} [role="tab"][aria-selected="true"]`)?.textContent.trim().slice(0, 80) || '';
+  return { route, tab };
+}
+
+const viewKey = ({ route, tab }) => `${route}#${tab}`;
+const postLink = article => article.querySelector('a[href*="/status/"]:has(time)');
+const postPath = article => {
+  const href = postLink(article)?.getAttribute('href')?.split(/[?#]/)[0];
+  return href && POST_PATH.test(href) ? href : null;
+};
+const feedPosts = () => [...document.querySelectorAll(`${PRIMARY} ${TIMELINE} article`)]
+  .filter(article => postPath(article) && article.getClientRects().length);
+
+function focusPost(article) {
+  if (!article.hasAttribute('tabindex')) article.tabIndex = -1;
+  article.setAttribute('data-exiter-reading-focus', '');
+  article.focus({ preventScroll: true });
+}
+
+function syncWorkspace() {
+  if (!isXWindow) return;
+  const account = profilePath()?.match(/^\/([A-Za-z0-9_]{1,15})$/)?.[1].toLowerCase() || '';
+  if (account === workspaceAccount) return;
+  workspaceAccount = account;
+  workspace = { pins: [] };
+  recentPositions.clear();
+  readingRestore = undefined;
+  clearTimeout(readingTimer);
+  if (palette) renderPalette();
+  if (!account) return;
+  ipcRenderer.invoke('exiter:workspace', account).then(saved => {
+    if (account !== workspaceAccount || !saved) return;
+    workspace = { pins: saved.pins || [], reading: workspace.reading || saved.reading };
+    if (palette) renderPalette();
+  }).catch(() => {});
+}
+
+function rememberReading() {
+  const view = readingView();
+  if (!workspaceAccount || !view || readingRestore || document.querySelector('[role="dialog"]')) return;
+  const post = feedPosts().find(article => {
+    const { top, bottom } = article.getBoundingClientRect();
+    return bottom > 76 && top < innerHeight;
+  });
+  if (!post) return;
+  const position = { ...view, post: postPath(post), top: Math.round(post.getBoundingClientRect().top) };
+  if (Math.abs(position.top) > 4000) return;
+  const key = viewKey(view);
+  const focused = document.activeElement?.closest('article[data-exiter-reading-focus]');
+  recentPositions.delete(key);
+  recentPositions.set(key, { ...position, focusedPost: focused ? postPath(focused) : null });
+  if (recentPositions.size > 20) recentPositions.delete(recentPositions.keys().next().value);
+  const before = workspace.reading;
+  if (before && viewKey(before) === key && before.post === position.post && Math.abs(before.top - position.top) < 24) return;
+  workspace.reading = position;
+  ipcRenderer.send('exiter:reading-position', workspaceAccount, position);
+}
+
+function restoreReadingPosition() {
+  if (!readingRestore) return;
+  const { position, expires, allowTabChange } = readingRestore;
+  if (performance.now() > expires) { readingRestore = undefined; return; }
+  const view = readingView();
+  if (view?.route !== position.route) return;
+  if (view.tab !== position.tab) {
+    if (allowTabChange && position.tab && !readingRestore.requestedTab) {
+      const tab = [...document.querySelectorAll(`${PRIMARY} [role="tab"]`)].find(el => el.textContent.trim() === position.tab);
+      if (tab) { readingRestore.requestedTab = true; tab.click(); }
+    }
+    return;
+  }
+  const posts = feedPosts();
+  const article = posts.find(el => postPath(el) === position.post);
+  if (!article) return;
+  readingRestore = undefined;
+  window.scrollBy({ top: article.getBoundingClientRect().top - position.top, behavior: 'instant' });
+  if (position.focusedPost) {
+    const focused = posts.find(el => postPath(el) === position.focusedPost);
+    if (focused) focusPost(focused);
+  }
+}
+
+function continueReading() {
+  const position = workspace.reading;
+  if (!position) return;
+  if (readingView()?.route === position.route && feedPosts().some(el => postPath(el) === position.post)) {
+    readingRestore = { position, expires: performance.now() + 1600, allowTabChange: true };
+    restoreReadingPosition();
+  } else go(position.post);
+}
+
+function currentPin() {
+  const view = readingView();
+  if (!view) return null;
+  if (location.pathname === '/search') {
+    const label = new URLSearchParams(location.search).get('q')?.trim().slice(0, 100);
+    return label ? { route: view.route, label } : null;
+  }
+  if (/^\/i\/lists\/\d+$/.test(location.pathname)) {
+    const id = location.pathname.split('/').at(-1);
+    const heading = [...document.querySelectorAll(`${PRIMARY} h2`)].find(el => !el.closest('article') && el.textContent.trim() !== 'Your Lists');
+    return { route: view.route, label: heading?.textContent.trim().slice(0, 100) || `List ${id}` };
+  }
+  return null;
+}
+
+async function togglePin(pin) {
+  const account = workspaceAccount;
+  try {
+    const pins = await ipcRenderer.invoke('exiter:toggle-pin', account, pin);
+    if (!pins || account !== workspaceAccount) return;
+    const wasPinned = workspace.pins.some(item => item.route === pin.route);
+    workspace.pins = pins;
+    if (palette) renderPalette();
+    const isPinned = pins.some(item => item.route === pin.route);
+    showStatus(wasPinned ? 'Pin removed.' : isPinned ? 'Pinned to your command palette.' : 'Your palette has room for 12 pins.');
+  } catch { showStatus('Couldn’t update your pins. Try again.'); }
+}
+
+if (isXWindow) {
+  window.addEventListener('scroll', () => {
+    if (!readingView() || readingRestore) return;
+    clearTimeout(readingTimer);
+    readingTimer = setTimeout(rememberReading, 380);
+  }, { passive: true });
+  document.addEventListener('click', (event) => {
+    if (event.target.closest?.(`${TIMELINE} article`) && !event.target.closest('button, [role="button"]') &&
+        event.button === 0 && !event.metaKey && !event.ctrlKey && !event.altKey && !event.shiftKey) rememberReading();
+  }, true);
+  window.addEventListener('popstate', (event) => {
+    if (!event.isTrusted) return;
+    const view = readingView();
+    const matches = view && [...recentPositions.values()].filter(pos => pos.route === view.route);
+    if (matches?.length) {
+      const position = recentPositions.get(viewKey(view)) || matches.at(-1);
+      readingRestore = { position, expires: performance.now() + 2200, allowTabChange: true };
+    }
+  });
+  for (const type of ['wheel', 'pointerdown', 'keydown']) {
+    window.addEventListener(type, () => { readingRestore = undefined; }, { passive: true, capture: true });
+  }
+  window.addEventListener('keydown', (event) => {
+    const { key, altKey, ctrlKey, metaKey, shiftKey, target } = event;
+    if (!readingView() || palette || event.isComposing || event.defaultPrevented ||
+        target.closest?.(`${EDITING}, [role="dialog"], [role="menu"], [role="listbox"]`) ||
+        document.querySelector('[role="dialog"]')) return;
+    const currentPost = target.closest?.('article[data-exiter-reading-focus]');
+    if (key === 'Enter' && currentPost === target && !altKey && !ctrlKey && !metaKey && !shiftKey) {
+      event.preventDefault();
+      event.stopPropagation();
+      postLink(currentPost)?.click();
+    }
+    if (!altKey || ctrlKey || metaKey || shiftKey || !['ArrowDown', 'ArrowUp'].includes(key)) return;
+    const posts = feedPosts();
+    const currentIndex = posts.indexOf(currentPost);
+    const direction = key === 'ArrowDown' ? 1 : -1;
+    const visible = posts.filter(post => {
+      const rect = post.getBoundingClientRect();
+      return rect.bottom > 76 && rect.top < innerHeight;
+    });
+    const next = currentIndex < 0 ? (direction === 1 ? visible[0] : visible.at(-1)) : posts[currentIndex + direction];
+    if (!next) return;
+    event.preventDefault();
+    event.stopPropagation();
+    focusPost(next);
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    next.scrollIntoView({ block: 'nearest', behavior: reduced ? 'instant' : 'smooth' });
+  }, true);
+}
+
+/* ---------- Loading feedback and local timings ---------- */
+let loadingIndicator;
+let loadingTimer;
+let navigationStarted;
+let navigationIntent;
+let launchMeasured = false;
+let contentBeforeNavigation;
+let lastUsableContent;
+const logTiming = (name, started) => ipcRenderer.send('exiter:timing', name, performance.now() - started);
+
+function startNavigationTiming() {
+  const now = performance.now();
+  navigationStarted = navigationIntent?.href === location.href && now - navigationIntent.started < 4000
+    ? navigationIntent.started : now;
+  navigationIntent = undefined;
+  contentBeforeNavigation = lastUsableContent;
+}
+
+if (isXWindow) document.addEventListener('click', event => {
+  const link = event.target.closest?.('a[href]');
+  if (!link || link.origin !== location.origin || (link.target && link.target !== '_self') ||
+      link.href === location.href || event.button !== 0 || event.metaKey || event.ctrlKey || event.altKey || event.shiftKey) return;
+  navigationIntent = { href: link.href, started: performance.now() };
+}, true);
+
+function syncTimelineLoading() {
+  if (!isXWindow) return;
+  const primary = document.querySelector(PRIMARY);
+  const indicator = primary?.querySelector('[role="progressbar"][aria-label="Loading timeline"]:not(article *, [role="dialog"] *)');
+  if (indicator !== loadingIndicator) {
+    clearTimeout(loadingTimer);
+    loadingIndicator?.removeAttribute('data-exiter-skeleton');
+    loadingIndicator = indicator;
+    if (indicator) loadingTimer = setTimeout(() => {
+      if (indicator.isConnected && loadingIndicator === indicator) indicator.setAttribute('data-exiter-skeleton', '');
+    }, 180);
+  }
+  if (!primary || indicator) return;
+  const article = primary.querySelector('article');
+  const usable = article ? postPath(article) || article : primary.querySelector('[data-testid="emptyState"], [data-testid="UserName"]');
+  if (!usable) return;
+  lastUsableContent = usable;
+  if (!launchMeasured && primary.querySelector(TIMELINE) && article) {
+    launchMeasured = true;
+    logTiming('launch to timeline', 0);
+  }
+  if (navigationStarted !== undefined && usable !== contentBeforeNavigation) {
+    logTiming('navigation to content', navigationStarted);
+    navigationStarted = undefined;
+  }
+}
+
+const decodedImages = new WeakMap();
+let galleryIdle;
+function warmGallery() {
+  const page = location.pathname.match(/^(\/[A-Za-z0-9_]{1,15}\/status\/\d+)\/photo\/(\d+)$/);
+  if (!page || galleryIdle !== undefined || document.hidden) return;
+  const [, post, index] = page;
+  const candidate = [Number(index) + 1, Number(index) - 1]
+    .map(number => document.querySelector(`a[href="${post}/photo/${number}"] img`))
+    .find(img => img?.complete && img.naturalWidth && decodedImages.get(img) !== img.currentSrc);
+  if (!candidate) return;
+  const source = candidate.currentSrc;
+  const route = location.pathname;
+  galleryIdle = (window.requestIdleCallback || (callback => setTimeout(callback, 100)))(() => {
+    galleryIdle = undefined;
+    if (document.hidden || location.pathname !== route || !candidate.isConnected ||
+        !candidate.complete || candidate.currentSrc !== source) return;
+    decodedImages.set(candidate, source);
+    candidate.decode().catch(() => {});
+  });
+}
+document.addEventListener('load', event => { if (event.target instanceof HTMLImageElement) warmGallery(); }, true);
+document.addEventListener('visibilitychange', warmGallery);
+
+/* Only animate interactions whose active state changes on a mounted, visible post. */
+const postActions = new WeakMap();
+const ON_ACTIONS = [
+  ['like', 'unlike'], ['bookmark', 'removeBookmark'], ['retweet', 'unretweet'],
+];
+const ACTION_SELECTOR = ON_ACTIONS.flat().map(id => `[data-testid="${id}"]`).join(',');
+function markPostActionChanges() {
+  for (const article of document.querySelectorAll(`${PRIMARY} article`)) {
+    const path = postPath(article);
+    const before = postActions.get(article);
+    const actions = [...article.querySelectorAll(ACTION_SELECTOR)];
+    const states = ON_ACTIONS.map(([off, on]) => {
+      const button = actions.find(el => el.dataset.testid === on || el.dataset.testid === off);
+      return button ? button.dataset.testid === on : undefined;
+    });
+    const stablePost = before && path && before.path === path;
+    if (stablePost && states.some((state, index) => state !== before.states[index])) {
+      const { top, bottom } = article.getBoundingClientRect();
+      const visible = top < innerHeight && bottom > 0;
+      actions.forEach(button => {
+        const index = ON_ACTIONS.findIndex(pair => pair.includes(button.dataset.testid));
+        if (states[index] === before.states[index]) return;
+        button.toggleAttribute('data-exiter-action-pop', visible && before.states[index] === false && states[index] === true);
+      });
+    } else if (!stablePost) actions.forEach(button => button.removeAttribute('data-exiter-action-pop'));
+    postActions.set(article, { path, states });
+  }
+}
 
 /* ---------- Settings: reflect the user's choices as <html> attributes (read by hide.css/theme.css) and CSS variables ---------- */
 const ACCENTS = { zinc: '#18181b', blue: '#2563eb', violet: '#7c3aed', rose: '#e11d48', green: '#16a34a', orange: '#ea580c' };
@@ -453,7 +754,6 @@ if (location.protocol !== 'file:') {
 }
 
 /* ---------- Timeline refresh ---------- */
-// One refresh at a time. It finishes when the first post actually changes (or after 2.5s), then eases back to the top.
 let refreshing = false;
 function scrollToTop() {
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -467,7 +767,8 @@ const firstPostKey = () => {
 function refreshTimeline() {
   if (refreshing) return;
   const active = document.activeElement;
-  if (active?.closest('[contenteditable="true"], input, textarea')) return;
+  if (active?.closest(EDITING)) return;
+  if (!navigator.onLine) { showStatus('You’re offline. Reconnect and try again.'); return; }
   refreshing = true;
   const spin = (on) => {
     const button = document.querySelector('button[data-exiter-refresh]');
@@ -479,24 +780,38 @@ function refreshTimeline() {
   };
   spin(true);
   const before = firstPostKey();
+  const route = location.href;
   let done = false;
   let obs = null;
   let cap = null;
-  const finish = () => {
+  const finish = (result) => {
     if (done) return;
     done = true;
     if (obs) obs.disconnect();
     clearTimeout(cap);
-    scrollToTop();
-    setTimeout(() => { refreshing = false; spin(false); }, 350);
+    refreshing = false;
+    spin(false);
+    if (location.href !== route) return;
+    if (result === 'updated') {
+      scrollToTop();
+      showStatus('Timeline updated.');
+    } else if (result === 'waiting') {
+      showStatus('Still waiting for X. You can try again.');
+    } else showStatus('No timeline change yet.');
   };
   const pill = document.querySelector('button[aria-label^="New posts are available"]');
   const onHome = location.pathname === '/home';
   const tab = document.querySelector('[role="tab"][aria-selected="true"]');
   if (!pill && !onHome && !tab) { refreshing = false; spin(false); ipcRenderer.send('exiter:reload-page'); return; }
-  obs = new MutationObserver(() => { if (firstPostKey() !== before) finish(); });
+  obs = new MutationObserver(() => {
+    if (location.href !== route) finish();
+    else {
+      const next = firstPostKey();
+      if (next && next !== before) finish('updated');
+    }
+  });
   obs.observe(document.body, { childList: true, subtree: true });
-  cap = setTimeout(finish, 2500);
+  cap = setTimeout(() => finish(loadingIndicator ? 'waiting' : 'unchanged'), 2500);
   if (pill) { pill.click(); return; }
   if (!onHome) { tab.click(); return; } // clicking the active tab re-fetches it and scrolls to the top
   // X reloads the timeline on its own "." shortcut, but only for trusted key events, so the main process sends a real one.
@@ -531,18 +846,21 @@ const PALETTE_CSS = `
   :host-context(html[data-ex-theme="dark"]) .overlay { background: rgba(0,0,0,.65); }
   :host([data-open]) .overlay { opacity: 1; visibility: visible; pointer-events: auto; transition-delay: 0s; }
   .panel { width: min(560px, calc(100vw - 32px)); max-height: 70vh; display: flex; flex-direction: column; overflow: hidden; background: var(--background, #fff);
-    border: 1px solid var(--border, #e4e4e7); border-radius: 12px; box-shadow: var(--shadow-pop, 0 8px 30px rgba(0,0,0,.12));
+    border: 1px solid var(--border, #e4e4e7); border-radius: var(--radius-lg); box-shadow: var(--shadow-pop, 0 8px 30px rgba(0,0,0,.12));
     transform: translateY(-6px) scale(.985); transition: transform var(--ex-dur) var(--ex-ease); }
   :host([data-open]) .panel { transform: none; }
   .row { display: flex; align-items: center; gap: 10px; padding: 0 14px; border-bottom: 1px solid var(--border, #e4e4e7); }
   .row svg { width: 16px; height: 16px; flex: none; fill: none; stroke: var(--muted-foreground, #71717a); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
   input { flex: 1; min-width: 0; height: 52px; border: 0; outline: 0; background: transparent; color: inherit; font: inherit; font-size: 15px; }
   input::placeholder { color: var(--muted-foreground, #71717a); }
-  .list { overflow-y: auto; padding: 6px; }
+  .row:focus-within { border-bottom-color: var(--ring); }
+  .list { position: relative; overflow-y: auto; padding: 6px; overscroll-behavior: contain; }
   .group { padding: 8px 10px 4px; font-size: 12px; font-weight: 500; color: var(--muted-foreground, #71717a); }
-  .item { display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 10px; border-radius: 8px; cursor: pointer; }
+  .item { position: relative; display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 10px; border-radius: var(--radius); cursor: pointer; }
   .item svg { width: 16px; height: 16px; flex: none; fill: none; stroke: var(--muted-foreground, #71717a); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
-  .item[aria-selected="true"] { background: var(--muted, #f4f4f5); }
+  .selection { position: absolute; inset: 0 6px auto; height: 36px; border-radius: var(--radius); background: var(--muted);
+    pointer-events: none; transform: translateY(var(--selection-top, 0px)); }
+  .selection[data-moving] { transition: transform var(--ex-dur-fast) var(--ex-ease); }
   .item[aria-selected="true"] svg { stroke: var(--foreground, #09090b); }
   .item .label { flex: 1; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   kbd { font-family: var(--font-mono, ui-monospace, Menlo, monospace); font-size: 11px; line-height: 1; padding: 3px 5px; border: 1px solid var(--border, #e4e4e7); border-radius: 4px; background: var(--muted, #f4f4f5); color: var(--muted-foreground, #71717a); }
@@ -551,18 +869,23 @@ const PALETTE_CSS = `
   .foot span { display: inline-flex; align-items: center; gap: 6px; }
   .close { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 7px; border: 0; background: transparent; cursor: pointer; }
   .close:hover { background: var(--muted); }
-  :focus-visible { outline: 2px solid var(--muted-foreground); outline-offset: -2px; }
+  .close:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
   .status { position: fixed; z-index: 2147483645; right: 20px; bottom: 20px; max-width: min(340px, calc(100vw - 40px));
     padding: 10px 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--background);
     color: var(--foreground); box-shadow: var(--shadow-pop); font: 13px/1.5 var(--font-sans);
     opacity: 0; transform: translateY(4px); pointer-events: none; transition: opacity var(--ex-dur-fast), transform var(--ex-dur-fast); }
   .status[data-visible] { opacity: 1; transform: none; }
-  @media (prefers-reduced-motion: reduce) { .overlay, .panel, .status { transition: none; transform: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    .overlay, .panel, .status { transition: none; transform: none; }
+    .selection[data-moving] { transition: none; }
+  }
 `;
 
 let palette = null; // { host, input, list, items, active, restore }
 
 function go(path) {
+  if (path === location.pathname + location.search) return;
+  navigationIntent = { href: new URL(path, location.origin).href, started: performance.now() };
   const link = document.querySelector(`a[href="${CSS.escape(path)}"]`);
   if (link) { link.click(); return; }
   // Same-document navigation: X's router listens for popstate, so this swaps the route without reloading (no splash, no lost state)
@@ -572,6 +895,17 @@ function go(path) {
   } catch { location.assign(path); }
 }
 ipcRenderer.on('exiter:show-notifications', () => go('/notifications'));
+ipcRenderer.on('exiter:show-home', () => go('/home'));
+function openComposer() {
+  userInteracted = true;
+  const draft = location.pathname === '/compose/post' && document.querySelector('[role="dialog"] [contenteditable="true"]');
+  if (draft) { draft.focus({ preventScroll: true }); return; }
+  const button = document.querySelector('[data-testid="SideNav_NewTweet_Button"]');
+  if (button) button.click();
+  else if (profilePath()) go('/compose/post');
+  else if (location.pathname !== '/compose/post') location.assign('/compose/post');
+}
+ipcRenderer.on('exiter:open-composer', openComposer);
 const profilePath = () => document.querySelector(PROFILE_LINK)?.getAttribute('href');
 const patch = async (settings, message) => {
   try {
@@ -585,7 +919,11 @@ const patch = async (settings, message) => {
 function buildCommands(query) {
   const dark = current && current.theme === 'dark';
   const profile = profilePath();
+  const pin = workspaceAccount && currentPin();
+  const pinnedHere = pin && workspace.pins.some(item => item.route === pin.route);
   const cmds = [
+    ...(workspace.reading ? [{ group: 'Reading', label: 'Continue reading', icon: 'fileText', run: continueReading }] : []),
+    ...workspace.pins.map(item => ({ group: 'Pinned', label: item.label, icon: item.route.startsWith('/search') ? 'search' : 'list', run: () => go(item.route) })),
     { group: 'Go to', label: 'Home', icon: 'house', run: () => go('/home') },
     { group: 'Go to', label: 'Explore', icon: 'search', run: () => go('/explore') },
     { group: 'Go to', label: 'Notifications', icon: 'bell', run: () => go('/notifications') },
@@ -595,7 +933,11 @@ function buildCommands(query) {
       { group: 'Go to', label: 'Lists', icon: 'users', run: () => go(`${profile}/lists`) },
     ] : []),
     { group: 'Go to', label: 'Bookmarks', icon: 'bookmark', run: () => go('/i/bookmarks') },
-    { group: 'Actions', label: 'New post', icon: 'squarePen', hint: `${MOD}${IS_MAC ? '⇧' : 'Shift+'}N`, run: () => { const b = document.querySelector('[data-testid="SideNav_NewTweet_Button"]'); b ? b.click() : go('/compose/post'); } },
+    { group: 'Actions', label: 'New post', icon: 'squarePen', hint: `${MOD}${IS_MAC ? '⇧' : 'Shift+'}N`, run: openComposer },
+    ...(pin ? [{
+      group: 'Actions', label: `${pinnedHere ? 'Unpin' : 'Pin'} this ${location.pathname === '/search' ? 'search' : 'list'}`,
+      icon: 'bookmark', run: () => togglePin(pin),
+    }] : []),
     { group: 'Actions', label: 'Refresh timeline', icon: 'refreshCw', hint: `${MOD}R`, run: refreshTimeline },
     { group: 'Actions', label: 'Scroll to top', icon: 'arrowUp', run: scrollToTop },
     { group: 'Actions', label: 'Go back', icon: 'arrowLeft', hint: `${MOD}[`, run: () => history.back() },
@@ -629,6 +971,10 @@ function renderPalette() {
     return;
   }
   let lastGroup = null;
+  const selection = document.createElement('div');
+  selection.className = 'selection';
+  selection.setAttribute('aria-hidden', 'true');
+  p.list.append(selection);
   cmds.forEach((c, i) => {
     if (c.group !== lastGroup) { const g = document.createElement('div'); g.className = 'group'; g.setAttribute('role', 'presentation'); g.textContent = c.group; p.list.append(g); lastGroup = c.group; }
     const el = document.createElement('div');
@@ -640,15 +986,24 @@ function renderPalette() {
     el.addEventListener('click', () => runActive(i));
     p.list.append(el);
   });
-  p.input.setAttribute('aria-activedescendant', `exp-${p.active}`);
+  markActive(false);
 }
 
-function markActive() {
+function markActive(animate = true) {
   const p = palette;
-  p.list.querySelectorAll('.item').forEach((el, i) => el.setAttribute('aria-selected', String(i === p.active)));
+  const items = p.list.querySelectorAll('.item');
+  items.forEach((el, i) => el.setAttribute('aria-selected', String(i === p.active)));
   p.input.setAttribute('aria-activedescendant', `exp-${p.active}`);
-  const el = p.list.querySelector(`#exp-${p.active}`);
-  if (p.active === 0) p.list.scrollTop = 0; else if (el) el.scrollIntoView({ block: 'nearest' });
+  const el = items[p.active];
+  if (!el) return;
+  const selection = p.list.querySelector('.selection');
+  selection.toggleAttribute('data-moving', animate);
+  selection.style.setProperty('--selection-top', `${el.offsetTop}px`);
+  if (p.active === 0) p.list.scrollTop = 0;
+  else if (el.offsetTop < p.list.scrollTop) p.list.scrollTop = el.offsetTop;
+  else if (el.offsetTop + el.offsetHeight > p.list.scrollTop + p.list.clientHeight) {
+    p.list.scrollTop = el.offsetTop + el.offsetHeight - p.list.clientHeight;
+  }
 }
 
 function runActive(i) {
@@ -666,7 +1021,7 @@ function showStatus(message) {
   clearTimeout(statusTimer);
   status.textContent = message;
   status.setAttribute('data-visible', '');
-  statusTimer = setTimeout(() => { status.removeAttribute('data-visible'); }, 3000);
+  statusTimer = setTimeout(() => { status.removeAttribute('data-visible'); status.textContent = ''; }, 3000);
 }
 
 function ensureWarm() {
@@ -705,13 +1060,15 @@ function ensureWarm() {
 
 function openPalette() {
   if (palette) return;
+  const started = performance.now();
   const w = ensureWarm();
   palette = { host: w.host, input: w.input, list: w.list, items: [], active: 0, restore: document.activeElement };
   w.input.value = '';
   w.host.setAttribute('data-open', '');
   w.overlay.inert = false;
   renderPalette();
-  w.input.focus();
+  w.input.focus({ preventScroll: true });
+  requestAnimationFrame(() => logTiming('palette to input', started));
 }
 
 function closePalette() {
@@ -720,7 +1077,7 @@ function closePalette() {
   palette = null;
   warm.overlay.inert = true;
   host.removeAttribute('data-open');
-  if (restore && typeof restore.focus === 'function' && document.contains(restore)) restore.focus();
+  if (restore && typeof restore.focus === 'function' && document.contains(restore)) restore.focus({ preventScroll: true });
 }
 
 window.addEventListener('keydown', (e) => {

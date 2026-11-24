@@ -21,7 +21,14 @@ nav a[role="link"], [data-testid="SideNav_NewTweet_Button"], article [role="grou
 
 /* Like / bookmark / repost: a small pop when the filled state appears */
 @keyframes ex-pop-in { 0% { scale: 0.7; } 55% { scale: 1.18; } 100% { scale: 1; } }
-[data-testid="unlike"] svg, [data-testid="removeBookmark"] svg, [data-testid="unretweet"] svg { animation: ex-pop-in var(--ex-dur-slow) var(--ex-ease); }
+[data-exiter-action-pop] svg { animation: ex-pop-in var(--ex-dur-slow) var(--ex-ease); }
+
+article[data-exiter-reading-focus] { scroll-margin-block: 76px 20px; }
+article[data-exiter-reading-focus]:focus-visible {
+  outline: 2px solid var(--ring) !important;
+  outline-offset: -2px;
+  border-radius: var(--radius);
+}
 
 /* Refresh: the icon spins while a refresh is actually in flight (preload sets data-spinning), then settles */
 button[data-exiter-refresh][data-spinning] svg { animation: ex-spin 0.7s linear infinite; }
@@ -30,12 +37,12 @@ button[data-exiter-refresh][data-spinning] svg { animation: ex-spin 0.7s linear 
 @keyframes ex-tick { 0% { translate: 0 5px; opacity: 0; } 100% { translate: 0 0; opacity: 1; } }
 button[aria-label^="New posts are available"][data-ex-tick] [data-testid="pillLabel"] { animation: ex-tick var(--ex-dur) var(--ex-ease); }
 
-/* Skeleton shimmer for X's in-feed spinner: soften it rather than leave a bare circle */
+/* Fade in X's smaller progress indicators. Timeline placeholders are in loading.css. */
 [role="progressbar"] { animation: ex-fade var(--ex-dur) var(--ex-ease); }
 
 @media (prefers-reduced-motion: reduce) {
   html[data-ex-route-anim] [data-testid="primaryColumn"] > div > div:last-child, [role="tab"] div[style*="background-color"],
-  [data-testid="unlike"] svg, [data-testid="removeBookmark"] svg, [data-testid="unretweet"] svg,
+  [data-exiter-action-pop] svg,
   button[aria-label^="New posts are available"][data-ex-tick] [data-testid="pillLabel"], [role="progressbar"],
   button[data-exiter-refresh][data-spinning] svg { animation: none !important; }
   header[role="banner"] nav :is(a, button) > div, [role="tab"], [role="tab"] :is(span, div[dir]),

@@ -16,6 +16,20 @@ app.whenReady().then(async () => {
   ipcMain.on('exiter:get-settings-sync', event => { event.returnValue = settings; });
   ipcMain.on('exiter:get-fonts', event => { event.returnValue = []; });
   ipcMain.handle('exiter:get-settings', () => settings);
+  const workspaces = new Map();
+  const workspace = account => {
+    if (!workspaces.has(account)) workspaces.set(account, { pins: [] });
+    return workspaces.get(account);
+  };
+  ipcMain.handle('exiter:workspace', (_event, account) => workspace(account));
+  ipcMain.on('exiter:reading-position', (_event, account, position) => { workspace(account).reading = position; });
+  ipcMain.handle('exiter:toggle-pin', (_event, account, pin) => {
+    const data = workspace(account);
+    const index = data.pins.findIndex(item => item.route === pin.route);
+    if (index >= 0) data.pins.splice(index, 1);
+    else data.pins.push(pin);
+    return data.pins;
+  });
   const testSession = session.fromPartition('exiter-layout-test');
   const image = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="100"><rect width="200" height="100" fill="gray"/></svg>');
   const fixture = `<!doctype html><html><head><style>
@@ -169,6 +183,20 @@ app.whenReady().then(async () => {
     await evaluate(`history.pushState({}, '', '/compose/post'); document.querySelector('#layer').innerHTML='<div role="dialog"><div id="ordinary-card"><input aria-label="Post text"><button aria-label="Close"><svg></svg></button></div></div>'`);
     await settle();
     assert.deepEqual(await evaluate(`(() => {const el=document.querySelector('#ordinary-card'), cs=getComputedStyle(el);return {media:el.parentElement.hasAttribute('data-exiter-media-viewer'),border:cs.borderTopWidth,radius:cs.borderTopLeftRadius,shadow:cs.boxShadow!=='none'};})()`), {media:false,border:'1px',radius:'12px',shadow:true});
+    await evaluate(`document.querySelector('#ordinary-card').innerHTML = '<div style="border:1px solid"><div id="editor-box" style="border:1px solid"><div data-testid="tweetTextarea_0_label"><div data-testid="tweetTextarea_0" contenteditable="true"></div></div></div></div><button data-testid="tweetButton" aria-disabled="true"><span>Post</span></button>'`);
+    await settle();
+    assert.deepEqual(await evaluate(`[...document.querySelectorAll('#ordinary-card[data-exiter-input], #ordinary-card [data-exiter-input]')].map(el => el.id)`), ['editor-box']);
+    for (const [theme, background, label] of [
+      ['light', 'rgb(244, 244, 245)', 'rgb(113, 113, 122)'],
+      ['dark', 'rgb(39, 39, 42)', 'rgb(161, 161, 170)'],
+    ]) {
+      await evaluate(`document.documentElement.dataset.exTheme = '${theme}'`);
+      await settle();
+      assert.deepEqual(await evaluate(`(() => {
+        const post = document.querySelector('[data-testid="tweetButton"]');
+        return [getComputedStyle(post).backgroundColor, getComputedStyle(post.firstElementChild).color, getComputedStyle(post).opacity];
+      })()`), [background, label, '1'], `disabled composer Post in ${theme} mode`);
+    }
     await evaluate(`document.querySelector('#layer').replaceChildren(); history.pushState({}, '', '/user'); document.querySelector('[data-testid="primaryColumn"]').insertAdjacentHTML('afterbegin', '<div id="profile"><a href="/user/header_photo"><div style="position:relative"><div style="padding-bottom:33.3333%"></div><img alt="Cover" src="${image}" style="position:absolute;inset:0;width:100%;height:100%"></div></a><div style="padding:16px"><div style="flex-direction:row;justify-content:space-between"><div data-testid="UserAvatar-Container-profile" style="width:25%;aspect-ratio:1;margin-top:-15%"><a href="/user/photo"><img alt="Avatar" src="${image}"></a></div><button id="profile-edit" style="height:32px">Edit profile</button></div><div data-testid="UserName">Profile name</div><div data-testid="UserDescription">A profile bio</div></div></div>')`);
     for (const width of [700, 1000, 1440, 1920, 1000]) {
       win.setContentSize(width, 900);
@@ -236,6 +264,95 @@ app.whenReady().then(async () => {
     await badge(5);
     await waitForBadge();
     assert.equal(notifications.length, 1, 'disabled alerts stay quiet');
+
+    await evaluate(`history.pushState({}, '', '/home');
+      document.querySelector('[data-testid="AppTabBar_Profile_Link"]').href = '/reader';
+      document.querySelector('[data-testid="primaryColumn"]').innerHTML = \`
+        <section aria-label="Timeline: Home">
+          <article style="min-height:480px">
+            <a href="/reader/status/1"><time>First post</time></a>
+            <button data-testid="unlike"><svg></svg></button>
+            <button data-testid="bookmark"><svg></svg></button>
+          </article>
+          <article style="min-height:480px"><a href="/reader/status/2"><time>Second post</time></a></article>
+          <article style="min-height:480px"><a href="/reader/status/3"><time>Third post</time></a></article>
+        </section>\`;
+      window.feedMarkup = document.querySelector('[data-testid="primaryColumn"]').innerHTML;
+      document.addEventListener('click', event => {
+        const href = event.target.closest('a')?.getAttribute('href');
+        if (!href?.includes('/status/')) return;
+        event.preventDefault();
+        history.pushState({}, '', href);
+        document.querySelector('[data-testid="primaryColumn"]').innerHTML = '<article>Thread</article>';
+        window.scrollTo(0, 0);
+      });
+      window.addEventListener('popstate', () => {
+        if (location.pathname === '/home') document.querySelector('[data-testid="primaryColumn"]').innerHTML = window.feedMarkup;
+      });
+    `);
+    await settle();
+    assert.equal(await evaluate(`document.querySelector('[data-testid="unlike"]').hasAttribute('data-exiter-action-pop')`), false);
+    await evaluate(`document.querySelector('[data-testid="bookmark"]').dataset.testid = 'removeBookmark'`);
+    await settle();
+    assert.equal(await evaluate(`document.querySelector('[data-testid="removeBookmark"]').hasAttribute('data-exiter-action-pop')`), true);
+    for (const [mode, expected] of [['reduce', 'none'], ['no-preference', 'ex-pop-in']]) {
+      await win.webContents.debugger.sendCommand('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: mode }] });
+      assert.equal(await evaluate(`getComputedStyle(document.querySelector('[data-exiter-action-pop] svg')).animationName`), expected);
+    }
+    await evaluate(`window.scrollTo(0, 365)`);
+    await waitForBadge();
+    assert.equal(workspace('reader').reading.post, '/reader/status/1');
+    sendKey('Down', ['alt']);
+    await settle();
+    assert.equal(await evaluate(`document.activeElement.getAttribute('data-exiter-reading-focus')`), '');
+    await evaluate(`window.scrollTo(0, 260)`);
+    sendKey('Return');
+    await settle();
+    assert.equal(await evaluate('location.pathname'), '/reader/status/1');
+    const beforeThread = workspace('reader').reading.top;
+    assert.ok(beforeThread < -200, 'the saved post was partly scrolled out of view');
+    await evaluate('history.back()');
+    await settle();
+    assert.equal(await evaluate('location.pathname'), '/home');
+    near(await evaluate(`document.querySelector('article').getBoundingClientRect().top`), beforeThread, 'back preserves reading position');
+    assert.equal(await evaluate(`document.activeElement === document.querySelector('article')`), true, 'back restores keyboard focus');
+
+    const paletteKey = process.platform === 'darwin' ? 'meta' : 'control';
+    sendKey('K', [paletteKey]);
+    await settle();
+    assert.equal(await evaluate(`document.querySelector('#exiter-palette').shadowRoot.querySelector('.item').textContent`), 'Continue reading');
+    assert.equal(await evaluate(`(() => {
+      const root = document.querySelector('#exiter-palette').shadowRoot;
+      return root.querySelector('.selection').style.getPropertyValue('--selection-top') === root.querySelector('.item').offsetTop + 'px';
+    })()`), true, 'selection aligns with the active option');
+    sendKey('Escape');
+    await evaluate(`history.pushState({}, '', '/search?q=design&src=typed_query'); document.querySelector('[data-testid="primaryColumn"]').innerHTML = '<div role="progressbar" aria-label="Loading timeline"><span>Loading</span></div>'`);
+    assert.equal(await evaluate(`document.querySelector('[role="progressbar"]').hasAttribute('data-exiter-skeleton')`), false);
+    await waitForBadge();
+    for (const theme of ['light', 'dark']) {
+      assert.deepEqual(await evaluate(`(() => {
+        document.documentElement.dataset.exTheme = '${theme}';
+        const indicator = document.querySelector('[role="progressbar"]');
+        const pseudo = getComputedStyle(indicator, '::after');
+        return { label: indicator.getAttribute('aria-label'), height: pseudo.height, visible: indicator.hasAttribute('data-exiter-skeleton') };
+      })()`), { label: 'Loading timeline', height: '336px', visible: true });
+    }
+    const choose = label => evaluate(`[...document.querySelector('#exiter-palette').shadowRoot.querySelectorAll('.item')].find(item => item.textContent === ${JSON.stringify(label)}).click()`);
+    sendKey('K', [paletteKey]);
+    await settle();
+    await choose('Pin this search');
+    await settle();
+    assert.deepEqual(workspace('reader').pins, [{ label: 'design', route: '/search?q=design&src=typed_query' }]);
+    sendKey('K', [paletteKey]);
+    await settle();
+    assert.equal(await evaluate(`[...document.querySelector('#exiter-palette').shadowRoot.querySelectorAll('.item')].some(item => item.textContent === 'design')`), true);
+    await choose('Unpin this search');
+    await settle();
+    assert.deepEqual(workspace('reader').pins, []);
+    await evaluate(`window.composerClicks = 0; document.querySelector('[data-testid="SideNav_NewTweet_Button"]').addEventListener('click', event => { event.preventDefault(); window.composerClicks++; })`);
+    win.webContents.send('exiter:open-composer');
+    await settle();
+    assert.equal(await evaluate('window.composerClicks'), 1, 'desktop compose uses the in-page button');
 
     ipcMain.handle('exiter:get-version', () => ({ version: '0.4.1', updatesEnabled: false }));
     ipcMain.handle('exiter:set-settings', (event, patch) => {
@@ -310,7 +427,7 @@ app.whenReady().then(async () => {
       document.querySelector('#confirm-reset button[value="reset"]').click();
       new Promise(resolve => setTimeout(resolve, 30));`);
     assert.equal(resets, 1);
-    console.log(`Passed ${cases} rail/fill cases, light/dark media viewers, profiles, sidebar clicks, palette keyboard and close controls, unread badge changes, and Settings sections and controls.`);
+    console.log(`Passed ${cases} rail/fill cases, media viewers, profiles, sidebar clicks, palette controls, unread badges, reading shortcuts and restoration, motion, loading states, pins, in-page compose, and Settings.`);
     app.exit(0);
   } catch (error) {
     console.error(error);

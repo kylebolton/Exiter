@@ -30,6 +30,8 @@ Get the latest build from the [**Releases page**](https://github.com/kylebolton/
 
 - **A calmer interface.** A zinc-neutral design system with light and dark themes, Geist type, thin line icons, hairline-divided posts and a fixed icon rail that stays in place as the window grows.
 - **Command palette (Cmd/Ctrl+K).** Jump to any page, start a post, refresh the timeline, flip the theme, or search X and open an `@name`, all from the keyboard.
+- **Pick up where you left off.** Open **Continue reading** from the palette. Exiter keeps your place when you go back from a thread and keeps the current view when you reopen it from the tray. Use **Alt/Option+↑/↓** to move between posts and **Enter** to open the focused thread.
+- **Pinned lists and searches.** On an X List or search results page, open the palette and choose **Pin this list** or **Pin this search**. Your pins and reading position stay on this computer and follow your signed-in X account.
 - **Refresh that works.** Cmd/Ctrl+R (or the refresh button) loads new posts; Cmd/Ctrl+Shift+R reloads the page. If your connection drops, Exiter shows an offline screen and reconnects by itself.
 - **Make it yours.** Settings cover theme, accent colour, font, text size, line spacing, interface zoom, feed width, density, media size, and which sidebar items appear. Choose **Settings → Layout → Feed width → Fill** to use all the space beside the navigation rail. There is an option to CAPITALISE usernames.
 - **Hide what you don't want.** Promoted posts, the right-hand column, suggestions, the floating chat buttons, the X logo and engagement counts can each be switched off.
@@ -49,6 +51,28 @@ Get the latest build from the [**Releases page**](https://github.com/kylebolton/
 - **Windows and Linux (AppImage)** use [`electron-updater`](https://www.electron.build/auto-update) against the same GitHub releases. The `.deb` package does not update itself.
 
 Updates are only checked in installed builds, never when running from source.
+
+## Open X links in Exiter
+
+On macOS, [Finicky](https://github.com/johnste/finicky) can send X links from apps such as Mail and Messages to Exiter and hand other links to your usual browser. Install the packaged Exiter app and Finicky 4, then set Finicky as your default web browser in **System Settings → Desktop & Dock**.
+
+Add this rule to `~/.finicky.js`. Set `defaultBrowser` to the browser you normally use. If you already have a Finicky config, add the handler to your existing list.
+
+```js
+export default {
+  defaultBrowser: "Google Chrome",
+  handlers: [
+    {
+      match: (url) =>
+        ["http:", "https:"].includes(url.protocol) &&
+        /^(?:(?:www|mobile)\.)?(?:x\.com|twitter\.com)$/.test(url.host),
+      browser: "me.kylebolton.exiter",
+    },
+  ],
+};
+```
+
+Apps and scripts can also open `exiter://open?url=` followed by an encoded X URL. For example, `exiter://open?url=https%3A%2F%2Fx.com%2Fhome`.
 
 ## Privacy
 
@@ -72,6 +96,8 @@ npm run fonts      # regenerate the embedded Geist font CSS
 npm run icons      # regenerate icons from assets/*.svg
 npm run dist       # unsigned installers for your OS, written to dist/
 ```
+
+Run `EXITER_PERF=1 npm start` to print coarse timings for launch to first timeline, navigation to content, and opening the command palette to the local terminal.
 
 ### Releasing
 

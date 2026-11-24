@@ -17,3 +17,32 @@ html, body { background-color: var(--background) !important; }
 [role="progressbar"] circle:last-child { stroke: var(--foreground) !important; }
 [role="progressbar"] circle { stroke-width: 3 !important; }
 [data-testid="progressBar-bar"] { background-color: var(--foreground) !important; }
+
+/* Replace a sustained timeline spinner visually, keeping its accessible name and role. */
+[role="progressbar"][data-exiter-skeleton] {
+  --skeleton-fill: color-mix(in srgb, var(--foreground) 8%, var(--background));
+  width: 100% !important;
+  align-self: stretch !important;
+  animation: none;
+}
+[role="progressbar"][data-exiter-skeleton] > * {
+  position: absolute !important;
+  opacity: 0 !important;
+  pointer-events: none;
+}
+[role="progressbar"][data-exiter-skeleton]::after {
+  content: "";
+  display: block;
+  width: 100%;
+  height: 336px;
+  background:
+    radial-gradient(circle 19px at 35px 35px, var(--skeleton-fill) 94%, transparent) 0 0 / 100% 112px repeat-y,
+    repeating-linear-gradient(to bottom, transparent 0 19px, var(--skeleton-fill) 19px 28px, transparent 28px 112px) 66px 0 / min(124px, 29%) 100% no-repeat,
+    repeating-linear-gradient(to bottom, transparent 0 39px, var(--skeleton-fill) 39px 48px, transparent 48px 112px) 66px 0 / min(74%, calc(100% - 82px)) 100% no-repeat,
+    repeating-linear-gradient(to bottom, transparent 0 57px, var(--skeleton-fill) 57px 66px, transparent 66px 112px) 66px 0 / min(53%, calc(100% - 82px)) 100% no-repeat,
+    repeating-linear-gradient(to bottom, transparent 0 111px, var(--border) 111px 112px);
+  animation: ex-fade var(--ex-dur) var(--ex-ease);
+}
+@media (prefers-reduced-motion: reduce) {
+  [role="progressbar"][data-exiter-skeleton]::after { animation: none; }
+}

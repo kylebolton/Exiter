@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const Store = require('electron-store');
 const updater = require('./updater');
+const { xLinkDestination, xLinkFromArguments } = require('./x-links');
 
 const DEFAULT_SETTINGS = {
   theme: 'light', accent: 'zinc', radius: 8, fontSize: 15, density: 'comfortable',
@@ -28,11 +29,13 @@ function getSettings() {
   return { ...DEFAULT_SETTINGS, ...saved, nav: { ...DEFAULT_SETTINGS.nav, ...(saved.nav || {}) } };
 }
 const HOME = 'https://x.com/home';
+const COMPOSE = 'https://x.com/compose/post';
 const ALLOWED_HOSTS = /(^|\.)(x\.com|twitter\.com|twimg\.com|google\.com|googleusercontent\.com|apple\.com|gstatic\.com|recaptcha\.net)$/;
 
 let win = null;
 let tray = null;
 let quitting = false;
+let launchDestination = xLinkFromArguments(process.argv);
 
 const css = (name) => fs.readFileSync(path.join(__dirname, 'theme', name), 'utf8');
 // Read the theme and fonts once: every document load (and every reload) asks for them synchronously
@@ -120,8 +123,53 @@ function isMainXFrame(event) {
     && frame?.url.startsWith('https://x.com/');
 }
 
+const workspaceAccount = /^[a-z0-9_]{1,15}$/;
+const readingRoute = /^\/(?:home|search\?[^#]+|i\/(?:bookmarks|lists\/\d+))$/;
+const postRoute = /^\/[A-Za-z0-9_]{1,15}\/status\/\d+$/;
+const workspacePath = (route) => typeof route === 'string' && route.length <= 600 && readingRoute.test(route);
+const workspaceKey = (account) => `workspace.${account}`;
+
+ipcMain.handle('exiter:workspace', (event, account) => {
+  if (!isMainXFrame(event) || typeof account !== 'string' || !workspaceAccount.test(account)) return null;
+  return store.get(workspaceKey(account), {});
+});
+
+ipcMain.on('exiter:reading-position', (event, account, position) => {
+  if (!isMainXFrame(event) || typeof account !== 'string' || !workspaceAccount.test(account)) return;
+  if (!position || !workspacePath(position.route) || typeof position.tab !== 'string' ||
+      position.tab.length > 80 || typeof position.post !== 'string' || !postRoute.test(position.post) ||
+      !Number.isFinite(position.top) || Math.abs(position.top) > 4000) return;
+  const key = `${workspaceKey(account)}.reading`;
+  const last = store.get(key);
+  if (!last || last.route !== position.route || last.tab !== position.tab ||
+      last.post !== position.post || Math.abs(last.top - position.top) >= 24) {
+    const { route, tab, post, top } = position;
+    store.set(key, { route, tab, post, top });
+  }
+});
+
+ipcMain.handle('exiter:toggle-pin', (event, account, pin) => {
+  if (!isMainXFrame(event) || typeof account !== 'string' || !workspaceAccount.test(account) ||
+      !pin || !workspacePath(pin.route) || !/^\/(?:search\?|i\/lists\/)/.test(pin.route) ||
+      typeof pin.label !== 'string' || !pin.label.trim() || pin.label.length > 100) return null;
+  const key = `${workspaceKey(account)}.pins`;
+  const pins = store.get(key, []);
+  const index = pins.findIndex(item => item.route === pin.route);
+  if (index >= 0) pins.splice(index, 1);
+  else if (pins.length < 12) pins.push(pin);
+  store.set(key, pins);
+  return pins;
+});
+
+ipcMain.on('exiter:timing', (event, name, duration) => {
+  if (!process.env.EXITER_PERF || !isMainXFrame(event)) return;
+  if (['launch to timeline', 'navigation to content', 'palette to input'].includes(name) && Number.isFinite(duration)) {
+    console.log(`[Exiter timing] ${name}: ${Math.round(duration)} ms`);
+  }
+});
+
 function openNotifications() {
-  showWindow({ refresh: false });
+  showWindow();
   if (win.webContents.getURL().startsWith('https://x.com/')) {
     win.webContents.send('exiter:show-notifications');
   } else {
@@ -220,7 +268,7 @@ function openSettings() {
   if (settingsReady) { w.show(); w.focus(); }
 }
 
-function createWindow() {
+function createWindow(destination) {
   win = new BrowserWindow({
     ...store.get('bounds'),
     minWidth: 700,
@@ -248,7 +296,8 @@ function createWindow() {
 
   // Reopen where the user left off (route is saved by preload.js), but only for plain x.com paths
   const last = store.get('lastRoute');
-  win.loadURL(typeof last === 'string' && /^\/[A-Za-z0-9_\/?=&%.+-]*$/.test(last) && !last.startsWith('//') ? `https://x.com${last}` : HOME).catch(() => {});
+  const saved = typeof last === 'string' && /^\/[A-Za-z0-9_\/?=&%.+-]*$/.test(last) && !last.startsWith('//') ? `https://x.com${last}` : HOME;
+  win.loadURL(destination || saved).catch(() => {});
   if (process.env.EXITER_DEBUG_PORT) console.log('EXITER_WINDOW_ID', win.getMediaSourceId().split(':')[1]);
 
   const wc = win.webContents;
@@ -277,7 +326,7 @@ function createWindow() {
   win.on('resize', saveBounds);
   win.on('move', saveBounds);
   win.on('close', (e) => {
-    if (isMac && !quitting) { e.preventDefault(); hiddenAt = Date.now(); win.hide(); }
+    if (isMac && !quitting) { e.preventDefault(); win.hide(); }
   });
   // Windows/Linux: a hidden (warm) Settings window must not keep the app alive after the main window closes
   win.on('closed', () => { win = null; if (!isMac) app.quit(); });
@@ -305,25 +354,38 @@ ipcMain.on('exiter:check-updates', () => updater.checkNow());
 ipcMain.handle('exiter:get-version', () => ({ version: app.getVersion(), updatesEnabled: updater.isSupported() }));
 ipcMain.on('exiter:reload-page', reloadPage);
 
-let hiddenAt = 0;
-function showWindow({ refresh = true } = {}) {
+function showWindow() {
   if (!win) createWindow();
   if (win.isMinimized()) win.restore();
-  // Back after a while away: refresh so the first thing seen is current, not what was there when it was hidden
-  if (refresh && hiddenAt && Date.now() - hiddenAt > 60000) refreshTimeline();
-  hiddenAt = 0;
   win.show();
   win.focus();
 }
 
+function openXLink(destination) {
+  if (!destination) return;
+  if (!win) {
+    launchDestination = destination;
+    return;
+  }
+  showWindow();
+  if (win.webContents.getURL() !== destination) win.loadURL(destination).catch(() => {});
+}
+
 function toggleWindow() {
-  if (win && win.isVisible() && win.isFocused()) { hiddenAt = Date.now(); win.hide(); }
+  if (win && win.isVisible() && win.isFocused()) win.hide();
   else showWindow();
 }
 
 function newPost() {
   showWindow();
-  win.webContents.loadURL('https://x.com/compose/post');
+  const wc = win.webContents;
+  const open = () => {
+    if (wc.isDestroyed()) return;
+    if (wc.getURL().startsWith('https://x.com/')) wc.send('exiter:open-composer');
+    else wc.loadURL(COMPOSE).catch(() => {});
+  };
+  if (wc.isLoadingMainFrame()) wc.once('did-stop-loading', open);
+  else open();
 }
 
 function trayMenu() {
@@ -331,7 +393,12 @@ function trayMenu() {
   return Menu.buildFromTemplate([
     { label: 'Show / Hide Exiter', accelerator: 'CmdOrCtrl+Shift+X', click: toggleWindow },
     { label: 'New Post', accelerator: 'CmdOrCtrl+Shift+N', click: newPost },
-    { label: 'Home', click: () => { showWindow(); win.webContents.loadURL(HOME); } },
+    { label: 'Home', click: () => {
+      showWindow();
+      const wc = win.webContents;
+      if (wc.getURL().startsWith('https://x.com/') && !wc.isLoadingMainFrame()) wc.send('exiter:show-home');
+      else wc.loadURL(HOME).catch(() => {});
+    } },
     { label: 'Refresh Timeline', accelerator: 'CmdOrCtrl+R', click: () => { showWindow(); refreshTimeline(); } },
     { label: 'Reload Page', accelerator: 'CmdOrCtrl+Shift+R', click: reloadPage },
     { type: 'separator' },
@@ -389,17 +456,29 @@ function buildAppMenu() {
 
 if (process.env.EXITER_DEBUG_PORT) app.commandLine.appendSwitch('remote-debugging-port', process.env.EXITER_DEBUG_PORT);
 
-if (!app.requestSingleInstanceLock()) app.quit();
-app.on('second-instance', showWindow);
+const primaryInstance = app.requestSingleInstanceLock();
+if (!primaryInstance) app.quit();
+app.on('open-url', (event, url) => {
+  event.preventDefault();
+  openXLink(xLinkDestination(url));
+});
+app.on('second-instance', (_event, args) => {
+  const destination = xLinkFromArguments(args);
+  if (destination) openXLink(destination);
+  else if (win) showWindow();
+});
 
 app.whenReady().then(async () => {
+  if (!primaryInstance) return;
+  if (app.isPackaged && process.platform === 'win32') app.setAsDefaultProtocolClient('exiter');
   if (process.platform === 'win32') app.setAppUserModelId('me.kylebolton.exiter');
   // Open connections to X's hosts before the first request needs them
   try { for (const h of ['https://x.com', 'https://api.x.com', 'https://pbs.twimg.com', 'https://abs.twimg.com', 'https://video.twimg.com']) session.fromPartition('persist:exiter').preconnect({ url: h, numSockets: 2 }); } catch {}
   if (isMac) app.dock.setIcon(path.join(__dirname, '..', 'assets', 'icon.png'));
   buildAppMenu();
   await applyThemeCookie();
-  createWindow();
+  createWindow(launchDestination);
+  launchDestination = null;
   buildTray();
   broadcastSettings();
   setTimeout(() => { if (app.isReady()) buildSettingsWindow(); }, 2500);
