@@ -1,0 +1,35 @@
+/* Chat ships its controls in an open shadow root. Exiter's tokens inherit from the host. */
+:host {
+  --ex-chat-radius: var(--radius-input);
+  --ex-chat-panel-radius: calc(var(--radius-input) + 4px);
+}
+[data-xchat-root] {
+  --x-font-sans: var(--ex-font);
+  --x-bg-primary: var(--background);
+  --x-bg-modal: var(--background);
+  --x-fg-primary: var(--foreground);
+  --x-fg-secondary: var(--muted-foreground);
+  --x-border-normal: var(--border);
+  background: var(--background) !important;
+  color: var(--foreground) !important;
+  letter-spacing: -0.011em;
+}
+[data-xchat-root], [data-xchat-root] *:not(svg, svg *, code, pre, pre *) { font-family: var(--ex-font) !important; }
+[data-xchat-root] :is([data-slot="xds-button"], [data-slot="xds-menu-trigger"], [data-testid="dm-search-close"]) { border-radius: var(--ex-chat-radius) !important; }
+[data-xchat-root] :is([data-testid="dm-inbox-dropdown-trigger"], [data-testid="dm-new-chat-button"]) {
+  min-height: 32px; color: var(--foreground) !important;
+}
+[data-xchat-root] :is([data-testid="dm-inbox-dropdown-trigger"], [data-testid="dm-new-chat-button"], [data-testid="dm-search-close"]) svg { width: 16px !important; height: 16px !important; }
+[data-xchat-root] :is([data-testid="dm-search-input"], [contenteditable="true"][role="textbox"]) {
+  border: 1px solid var(--border) !important; border-radius: var(--radius-input) !important;
+  background: var(--background) !important; color: var(--foreground) !important; font-size: 14px !important;
+}
+[data-xchat-root] :is([data-testid="dm-search-input"], [contenteditable="true"][role="textbox"]):focus {
+  border-color: var(--ring) !important; box-shadow: 0 0 0 2px color-mix(in srgb, var(--ring) 20%, transparent);
+}
+[data-xchat-root] [role="menu"] {
+  border: 1px solid var(--border) !important; border-radius: var(--ex-chat-panel-radius) !important;
+  background: var(--background) !important; box-shadow: var(--shadow-pop) !important;
+}
+[data-xchat-root] [role="menuitem"] { border-radius: var(--ex-chat-radius) !important; }
+[data-xchat-root] [role="menuitem"]:is(:hover, :focus-visible) { background: var(--muted) !important; }

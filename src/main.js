@@ -40,11 +40,14 @@ let launchDestination = xLinkFromArguments(process.argv);
 const css = (name) => fs.readFileSync(path.join(__dirname, 'theme', name), 'utf8');
 // Read the theme and fonts once: every document load (and every reload) asks for them synchronously
 let cssCache = null;
+let chatCssCache = null;
 let fontCache = null;
 
 // The skin is injected by preload.js at document start (synchronously, before first paint), so a reload never flashes unstyled X.
-const CSS_FILES = ['tokens', 'shell', 'nav', 'feed', 'cards', 'composer', 'overlays', 'pages', 'search', 'motion', 'loading', 'hide'];
-ipcMain.on('exiter:get-css', (e) => { e.returnValue = cssCache || (cssCache = CSS_FILES.map((n) => css(`${n}.css`)).join('\n')); });
+const CSS_FILES = ['tokens', 'shell', 'nav', 'feed', 'cards', 'composer', 'overlays', 'pages', 'search', 'motion', 'hide', 'x-layout', 'loading'];
+ipcMain.on('exiter:get-css', (e, surface) => {
+  e.returnValue = surface === 'chat' ? (chatCssCache ??= css('chat.css')) : (cssCache ??= CSS_FILES.map(n => css(`${n}.css`)).join('\n'));
+});
 ipcMain.on('exiter:get-fonts', (e) => { e.returnValue = fontCache || (fontCache = JSON.parse(fs.readFileSync(path.join(__dirname, 'theme', 'fonts.json'), 'utf8')).faces); });
 ipcMain.on('exiter:route', (_e, route) => { if (typeof route === 'string' && route.startsWith('/') && !route.startsWith('//') && route.length < 200) store.set('lastRoute', route); });
 ipcMain.on('exiter:get-settings-sync', (e) => { e.returnValue = getSettings(); });

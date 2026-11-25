@@ -10,11 +10,13 @@ app.whenReady().then(async () => {
     feedWidth: 'fill', mediaMax: 620, fontFamily: 'geist', lineHeight: 'normal',
     caps: 'names', hideRightRail: true, nav: {}, uiZoom: 100,
   };
-  const theme = ['tokens', 'shell', 'nav', 'feed', 'cards', 'composer', 'overlays', 'pages', 'search', 'motion', 'loading', 'hide'];
+  const theme = ['tokens', 'shell', 'nav', 'feed', 'cards', 'composer', 'overlays', 'pages', 'search', 'motion', 'hide', 'x-layout', 'loading'];
   const css = theme.map(name => readFileSync(path.join(__dirname, '..', 'src', 'theme', `${name}.css`), 'utf8')).join('\n');
-  ipcMain.on('exiter:get-css', event => { event.returnValue = css; });
+  const chatCss = readFileSync(path.join(__dirname, '..', 'src', 'theme', 'chat.css'), 'utf8');
+  ipcMain.on('exiter:get-css', (event, surface) => { event.returnValue = surface === 'chat' ? chatCss : css; });
   ipcMain.on('exiter:get-settings-sync', event => { event.returnValue = settings; });
-  ipcMain.on('exiter:get-fonts', event => { event.returnValue = []; });
+  const { faces } = JSON.parse(readFileSync(path.join(__dirname, '..', 'src', 'theme', 'fonts.json'), 'utf8'));
+  ipcMain.on('exiter:get-fonts', event => { event.returnValue = event.senderFrame.url.includes('new-layout') ? faces : []; });
   ipcMain.handle('exiter:get-settings', () => settings);
   const workspaces = new Map();
   const workspace = account => {
@@ -57,7 +59,43 @@ app.whenReady().then(async () => {
       <section class="timeline" aria-label="Timeline: Home"><div><div data-testid="cellInnerDiv"><article><div id="media" data-testid="tweetPhoto"><img alt="Media" src="${image}"></div></article></div></div></section>
     </div><div data-testid="sidebarColumn">Right rail</div></div></div></div></div></main>
   </div></div></div><div id="layer"></div></body></html>`;
-  testSession.protocol.handle('https', () => new Response(fixture, { headers: { 'content-type': 'text/html' } }));
+  // The new renderer has no react-root, banner role, primaryColumn or tweet test IDs.
+  const glyph = '<svg data-icon="icon-example" viewBox="0 0 24 24"><path d="M0 0h10v10z"/></svg>';
+  const newFixture = `<!doctype html><html><head><style>
+    body{margin:0;--x-main-column-width:600px}
+    body>div{max-width:1024px;margin:auto} #desktop{display:flex;justify-content:center}
+    #rail{width:calc(72px + 184px * var(--x-sidebar-expanded,1));display:flex;flex-direction:column}
+    #rail nav{display:flex;flex-direction:column;padding:12px}
+    #rail nav>a{display:flex;width:48px;height:48px} #rail nav span{display:inline-flex}
+    #sidebar-compose-post{display:grid;width:48px;height:48px}
+    #grid{display:grid;grid-template-columns:var(--x-main-column-width) minmax(0,1fr);flex:1;max-width:900px}
+    main{width:100%;box-sizing:border-box;border-inline:1px solid;margin:auto}
+    [id^="urt:"]{max-width:600px;margin:auto} [role="tablist"]{display:flex;flex:1}
+    [role="group"]{display:flex} [role="group"] button span{display:inline-flex}
+    div[lang]{font:400 15px/21px Arial,sans-serif} .text-primary{font:700 15px/20px Arial,sans-serif} .text-secondary{font-size:15px} .text-brand{color:blue}
+  </style></head><body><div><div id="desktop"><div><div id="rail">
+    <div><a href="/home" aria-label="X">X</a></div><div data-rail-overflow><nav aria-label="Primary">
+      <a href="/home" aria-label="Home" data-status="active"><span><span>${glyph}${glyph}</span></span></a>
+      <a href="/i/history" aria-label="History"><span><svg><use href="#icon-bookmark"/></svg>${glyph}</span></a>
+      <a href="/i/calls" aria-label="Calls"><span>${glyph}</span></a>
+      <a href="/reader" aria-label="Profile"><span>${glyph}</span></a>
+    </nav><div><a id="sidebar-compose-post" href="/compose/post" aria-label="Post"><span>${glyph}</span><span>Post</span></a></div></div>
+    <div><button aria-label="Account menu">Account</button></div>
+  </div></div><div id="grid"><main><div><header data-page-header><div style="display:flex">
+    <div role="tablist"><button role="tab" aria-selected="true"><span>For you</span><span data-tab-underline></span></button></div>
+    <button aria-label="Manage timelines">+</button>
+  </div><div id="live-spaces"><div class="group/carousel"><div><div role="list"><div role="listitem"><a href="/i/spaces/banner/peek">A listener is speaking</a></div></div></div></div></div>
+  </header><div><textarea aria-label="What's happening?" aria-multiline="true" aria-autocomplete="list"></textarea></div>
+  <section aria-labelledby="timeline-title"><h2 id="timeline-title">Your Home Timeline</h2><div><div><div id="urt:home:for-you"><div><button id="show-new"><div class="text-brand">Show 35 posts</div></button></div><ul>
+    <li><div role="link" data-href="/reader/status/1"><article><div class="@container/post-actions"><div class="x-middot-group"><a href="/reader"><span class="text-primary">Reader</span></a><svg aria-label="Verified account"><use href="#icon-verified-premium-color"/></svg><a class="text-secondary" href="/reader/status/1">5h</a></div><div></div></div>
+      <div lang="en"><span>An ordinary post that mentions <a href="/reader">Ad</a> and <a href="/i/spaces/post/peek">a Space</a>.</span></div><div role="group"><div data-engagement-action="like"><button class="x-engagement-button" aria-pressed="false"><span><span>${glyph}</span><span>3</span></span></button></div></div>
+      <div role="link" data-href="/reader/status/3" data-slot="embedded-tweet-frame" style="border-radius:16px"><article><div class="whitespace-pre-wrap wrap-anywhere"><span>Quoted post without a language attribute.</span></div><div role="link" data-href="/reader/status/4"><div lang="en" class="text-subtext1 whitespace-pre-wrap">Compact quote preview</div></div><div class="overflow-hidden" style="border-radius:0"><div data-slot="xds-context-menu-trigger"><a data-engagement-action="media"><img src="${image}" alt="Quoted image"></a></div></div></article></div>
+    </article></div></li>
+    <li><div role="link" data-href="/reader/status/2"><article><div class="@container/post-actions"><div class="x-middot-group">Advertiser</div><div><a href="/reader">Ad</a></div></div><div lang="en">Promoted post</div></article></div></li>
+  </ul></div></div></div></section></div></main><aside>Right column</aside></div></div></div></body></html>`;
+  testSession.protocol.handle('https', request => new Response(new URL(request.url).searchParams.has('new-layout') ? newFixture : fixture, {
+    headers: { 'content-type': 'text/html' },
+  }));
   const win = new BrowserWindow({ show: false, webPreferences: {
     sandbox: true, session: testSession, backgroundThrottling: false,
     preload: path.join(__dirname, '..', 'src', 'preload.js'),
@@ -358,7 +396,7 @@ app.whenReady().then(async () => {
     ipcMain.handle('exiter:set-settings', (event, patch) => {
       const nav = { ...settings.nav, ...patch.nav };
       Object.assign(settings, patch, { nav });
-      event.sender.send('exiter:settings', settings);
+      for (const recipient of new Set([event.sender, win.webContents])) recipient.send('exiter:settings', settings);
       return settings;
     });
     let resets = 0;
@@ -427,7 +465,217 @@ app.whenReady().then(async () => {
       document.querySelector('#confirm-reset button[value="reset"]').click();
       new Promise(resolve => setTimeout(resolve, 30));`);
     assert.equal(resets, 1);
+
+    Object.assign(settings, { theme: 'dark', accent: 'zinc', feedWidth: 'fill', hideAds: true, hideLogo: true, hideRightRail: true,
+      hideMetrics: true, nav: { calls: false }, caps: 'names', fontFamily: 'geist', lineHeight: 'relaxed', fontSize: 17, density: 'comfortable' });
+    await win.loadURL('https://x.com/home?new-layout');
+    await settle();
+    for (const width of [700, 1220]) {
+      win.setContentSize(width, 900);
+      await settle();
+      const layout = await evaluate(`(() => {
+        const q = s => document.querySelector(s);
+        const style = s => getComputedStyle(q(s));
+        const rect = s => q(s).getBoundingClientRect();
+        return { rail: rect('#rail').width, feed: rect('main').width, left: rect('main').left,
+          timeline: rect('[id^="urt:"]').width, right: style('aside').display,
+          logo: rect('#rail a[aria-label="X"]').width, calls: style('nav a[href="/i/calls"]').display,
+          railSpacing: rect('nav a[href="/i/history"]').top - rect('nav a[href="/home"]').bottom,
+          homeIcons: [...q('nav a[href="/home"]').querySelectorAll('svg')].map(e => e.dataset.exiterIcon),
+          compose: rect('#sidebar-compose-post svg[data-exiter-post-icon]').width, composeRadius: style('#sidebar-compose-post').borderRadius,
+          bodyText: style('article [lang]').fontSize, name: style('.x-middot-group a > .text-primary').textTransform,
+          border: style('main').borderColor, ad: style('[data-href="/reader/status/2"]').display,
+          ordinary: style('[data-href="/reader/status/1"]').display, refresh: !!q('[data-exiter-refresh]'),
+          icon: q('[data-engagement-action="like"] svg').dataset.exiterIcon,
+          iconWidth: rect('[data-engagement-action="like"] svg').width,
+          count: style('.x-engagement-button span > span:last-child').display };
+      })()`);
+      assert.deepEqual(layout, { rail: 88, feed: width - 88, left: 88, timeline: width - 89, right: 'none',
+        logo: 0, calls: 'none', railSpacing: 14, homeIcons: ['house', 'house'], compose: 16, composeRadius: `${settings.radius}px`,
+        bodyText: '17px', name: 'uppercase', border: 'rgb(39, 39, 42)', ad: 'none', ordinary: 'block', refresh: true,
+        icon: 'heart', iconWidth: 16, count: 'none' }, `new X layout at ${width}px`);
+    }
+    await evaluate(`document.documentElement.dataset.exFeed = 'narrow';
+      document.querySelector('[data-engagement-action="like"] button').setAttribute('aria-pressed', 'true');
+      document.querySelector('[data-href="/reader/status/2"] .x-middot-group + div').replaceChildren();`);
+    await settle();
+    assert.deepEqual(await evaluate(`[
+      document.querySelector('main').getBoundingClientRect().width,
+      document.querySelector('[data-engagement-action="like"] svg').dataset.exiterIcon,
+      document.querySelector('[data-engagement-action="like"] button').hasAttribute('data-exiter-action-pop'),
+      getComputedStyle(document.querySelector('[data-href="/reader/status/2"]')).display,
+    ]`), [600, 'heart-on', true, 'block']);
+    assert.deepEqual(await evaluate(`(() => {
+      delete document.documentElement.dataset.exHideRail;
+      document.documentElement.dataset.exFeed = 'fill';
+      return ['main', 'aside'].map(s => document.querySelector(s).getBoundingClientRect().width);
+    })()`), [782, 350], 'X’s right column can be restored');
+    assert.deepEqual(await evaluate(`(async () => {
+      await document.fonts.ready;
+      const style = selector => getComputedStyle(document.querySelector(selector));
+      const font = style('article [lang] > span');
+      const author = style('.x-middot-group .text-primary');
+      const row = style('#show-new > div');
+      const glyphs = s => [...document.querySelectorAll(s)].map(e => e.getAttribute('data-exiter-icon'));
+      return { family: font.fontFamily.split(',')[0], fontLoaded: [...document.fonts].some(f => f.family === 'Exiter Geist' && f.status === 'loaded'),
+        size: font.fontSize, leading: font.lineHeight, author: [author.fontSize, author.fontWeight], handle: style('.x-middot-group .text-secondary').fontSize,
+        quoted: style('article article .whitespace-pre-wrap').fontSize, compactQuote: style('article article .text-subtext1').fontSize,
+        newPosts: [row.fontSize, row.color, ...glyphs('#show-new svg')], history: glyphs('nav a[href="/i/history"] svg'),
+        verified: glyphs('article svg[aria-label="Verified account"]'), nativeGlyphHidden: style('nav a[href="/i/history"] svg > use').display };
+    })()`), { family: '"Exiter Geist"', fontLoaded: true, size: '17px', leading: '29.75px', author: ['12.88px', '600'], handle: '13px', quoted: '17px', compactQuote: '17px',
+      newPosts: ['13px', 'rgb(161, 161, 170)', 'arrowUp'], history: ['bookmark', 'bookmark'], verified: ['badgeCheck'], nativeGlyphHidden: 'none' });
+    assert.deepEqual(await evaluate(`['#live-spaces', 'article a[href="/i/spaces/post/peek"]'].map(s => getComputedStyle(document.querySelector(s)).display)`),
+      ['none', 'inline'], 'hide the live Spaces strip and preserve links in posts');
+    assert.deepEqual(await evaluate(`['[data-slot="embedded-tweet-frame"]', '[data-slot="embedded-tweet-frame"] .overflow-hidden'].map(s => getComputedStyle(document.querySelector(s)).borderRadius)`),
+      [String(settings.radius + 4) + 'px', String(settings.radius) + 'px'], 'quote card and media follow Exiter’s corner radius settings');
+    for (const value of [13, 22]) {
+      await prefs(`(() => {
+        const slider = document.getElementById('fontSize');
+        slider.value = '${value}';
+        slider.dispatchEvent(new Event('input'));
+        slider.dispatchEvent(new Event('change'));
+      })()`);
+      await settle();
+      assert.deepEqual(await evaluate(`['article [lang] > span', 'article article .whitespace-pre-wrap > span', 'article article .text-subtext1'].map(s => getComputedStyle(document.querySelector(s)).fontSize)`),
+        Array(3).fill(`${value}px`), 'the Settings slider sizes regular and quoted post text together');
+    }
+    await evaluate(`document.querySelector('#show-new > div').firstChild.data = 'Show 70 posts';
+      document.querySelector('#show-new').addEventListener('click', () => {
+        document.querySelector('[data-href="/reader/status/1"]').dataset.href = '/reader/status/70';
+        document.querySelector('#show-new').remove();
+      });`);
+    await settle();
+    assert.equal(await evaluate(`document.querySelectorAll('#show-new [data-exiter-showposts-arrow]').length`), 1);
+    await evaluate(`document.querySelector('[data-exiter-refresh]').click()`);
+    assert.equal(await evaluate(`document.querySelector('[data-href="/reader/status/70"]') !== null && !document.querySelector('#show-new')`), true);
+
+    await evaluate(`(() => {
+      const timeline = document.querySelector('[id^="urt:"]');
+      timeline.innerHTML = '<button>Show 1 new post</button><ul style="position:relative;list-style:none;margin:0;padding:0"></ul>';
+      const list = timeline.querySelector('ul');
+      timeline.querySelector('button').addEventListener('click', event => {
+        event.currentTarget.remove();
+        list.innerHTML = [120, 746, 140].map((height, index) => {
+          const ad = index === 1 ? '<div class="@container/post-actions"><div class="x-middot-group"></div><div><a href="/reader">Ad</a></div></div>' : '';
+          return '<li data-index="' + index + '" style="position:absolute;width:100%;top:0"><div role="link" data-href="/reader/status/' + (80 + index) + '"><article style="height:' + height + 'px">' + ad + '</article></div></li>';
+        }).join('');
+        const heights = [120, 746, 140];
+        const place = () => {
+          let top = 0;
+          for (const [index, row] of [...list.children].entries()) {
+            row.style.transform = 'translateY(' + top + 'px)';
+            top += heights[index];
+          }
+          list.style.height = top + 'px';
+        };
+        place();
+        // X ignores zero-height observations, retaining each row's last measured height.
+        const observer = new ResizeObserver(entries => {
+          for (const entry of entries) {
+            if (entry.contentRect.height > 0) heights[Number(entry.target.dataset.index)] = entry.contentRect.height;
+          }
+          place();
+        });
+        for (const row of list.children) observer.observe(row);
+      });
+    })()`);
+    await settle();
+    await evaluate(`document.querySelector('[data-exiter-showposts-button]').click()`);
+    await settle();
+    const gap = () => evaluate(`document.querySelector('li[data-index="2"]').getBoundingClientRect().top - document.querySelector('li[data-index="0"]').getBoundingClientRect().bottom`);
+    assert.equal(await gap(), 1, 'the hidden promoted row preserves a measurable height after loading new posts');
+    await evaluate(`document.documentElement.removeAttribute('data-ex-hide-ads')`);
+    await settle();
+    assert.equal(await gap(), 746, 'showing promoted posts restores their full height');
+    await evaluate(`(() => {
+      const container = document.createElement('div');
+      container.setAttribute('role', 'status');
+      container.setAttribute('data-top-chrome-follow', '');
+      container.innerHTML = '<div><button style="background:blue;border-radius:999px"><svg></svg><span aria-hidden="true"><i class="x-avatar">Avatar</i></span><span>See new posts</span></button></div>';
+      document.querySelector('section').prepend(container);
+      container.querySelector('button').addEventListener('click', () => container.remove());
+    })()`);
+    await settle();
+    assert.deepEqual(await evaluate(`(() => {
+      const pill = document.querySelector('[data-top-chrome-follow] button');
+      const svg = pill.querySelector('svg');
+      const style = getComputedStyle(pill);
+      return [style.backgroundColor, style.borderRadius, style.height, svg.dataset.exiterIcon, getComputedStyle(svg).width,
+        getComputedStyle(pill.lastElementChild).fontSize, getComputedStyle(pill.querySelector('.x-avatar')).width];
+    })()`), ['rgb(9, 9, 11)', String(settings.radius + 4) + 'px', '36px', 'arrowUp', '16px', '13px', '20px']);
+    await evaluate(`document.querySelector('[data-exiter-refresh]').click()`);
+    assert.equal(await evaluate(`!!document.querySelector('[data-top-chrome-follow] button')`), false);
+    await evaluate(`(() => {
+      document.querySelector('#rail').firstElementChild.outerHTML = '<h1><a href="/home" aria-label="X">X</a></h1>';
+      document.querySelector('main').innerHTML = '<div data-top-chrome><button data-slot="xds-button" aria-label="Back">Back</button><h2>Post</h2></div>' +
+        '<article><button data-slot="xds-button" aria-label="Follow @reader">Follow</button><div lang="en">Post text</div></article>' +
+        '<form><div><div aria-hidden="true">Mirror</div><textarea aria-label="Post your reply" aria-multiline="true" aria-autocomplete="list"></textarea></div><button id="reply-submit" class="bg-btn-primary" disabled>Reply</button></form>' +
+        '<form role="search"><div role="group"><input role="combobox"></div></form>' +
+        '<section><a aria-label="Opens header photo" href="/reader/header_photo"><div></div></a><div class="@container"><div><a aria-label="Opens profile photo" href="/reader/photo">Avatar</a></div><button data-slot="xds-button" aria-label="Message" style="border-radius:9999px">Message</button><span>Bio <a class="text-brand" href="/writer" style="color:blue">@writer</a></span><div><a class="text-brand" href="https://example.invalid" style="color:blue">Website</a></div></div></section>';
+      document.body.insertAdjacentHTML('beforeend', '<div role="dialog" data-modal-slot-surface><div data-slot="xds-modal-scroll-body">Compose</div></div>');
+    })()`);
+    assert.deepEqual(await evaluate(`(() => {
+      const get = s => getComputedStyle(document.querySelector(s));
+      const rail = document.querySelector('#rail');
+      return { logo: rail.firstElementChild.getBoundingClientRect().height, editor: [get('textarea').fontSize, get('form > div').borderTopWidth, get('form > div').borderRadius],
+        reply: [get('#reply-submit').height, get('#reply-submit').borderRadius, get('#reply-submit').backgroundColor],
+        follow: [get('article button').borderRadius, get('article button').backgroundColor], body: get('article [lang]').fontSize,
+        message: [get('[aria-label="Message"]').borderRadius, get('[aria-label="Message"]').fontSize],
+        profileLinks: [...document.querySelectorAll('section a.text-brand')].map(link => [getComputedStyle(link).color, getComputedStyle(link).textDecorationLine]),
+        search: get('[role="search"] > [role="group"]').borderRadius, cover: Math.round(document.querySelector('[aria-label="Opens header photo"]').getBoundingClientRect().height),
+        avatar: get('[aria-label="Opens profile photo"]').getPropertyValue('--profile-avatar-size'),
+        dialog: [get('[role="dialog"]').borderTopWidth, get('[role="dialog"] > div').borderTopWidth] };
+    })()`), { logo: 0, editor: ['15px', '1px', String(settings.radius) + 'px'],
+      reply: ['32px', String(settings.radius) + 'px', 'rgb(39, 39, 42)'], follow: [String(settings.radius) + 'px', 'rgb(250, 250, 250)'], body: '22px',
+      message: [String(settings.radius) + 'px', '13px'], profileLinks: [['rgb(250, 250, 250)', 'underline'], ['rgb(250, 250, 250)', 'underline']],
+      search: String(settings.radius) + 'px', cover: 220, avatar: '112px', dialog: ['1px', '0px'] });
+    await evaluate(`document.documentElement.removeAttribute('data-ex-hide-logo')`);
+    assert.notEqual(await evaluate(`document.querySelector('#rail > h1').getBoundingClientRect().height`), 0, 'the thread logo can still be enabled');
+    await evaluate(`(() => {
+      document.querySelector('main form').insertAdjacentHTML('beforeend', '<div><a id="participant" class="text-brand" style="color:blue" href="/reader">@reader</a><button aria-label="Add media">${glyph}</button><button aria-label="Generate image">${glyph}</button></div>');
+      const article = document.querySelector('main article');
+      const wrapper = document.createElement('div');
+      wrapper.setAttribute('data-navigation-stop','');
+      article.replaceWith(wrapper); wrapper.append(article);
+      article.insertAdjacentHTML('beforeend', '<a href="/reader"><div class="text-body text-primary font-bold">Reader</div></a><a id="message-cta" data-slot="xds-button" href="/messages/compose?recipient_id=1" style="color:blue;border-radius:999px">${glyph}Send a private message</a>');
+      document.body.insertAdjacentHTML('beforeend', '<div data-base-ui-portal><div role="presentation"><div data-base-ui-focusable data-side="bottom"><a class="text-brand" style="color:blue" href="/writer">Bio link</a><button data-slot="xds-button" style="border-radius:999px">${glyph}Profile Summary</button></div></div><div data-slot="xds-combobox-content" style="border-radius:999px"><div data-slot="xds-combobox-list" aria-label="Search results"><a data-slot="xds-combobox-item" href="/search">Recent query</a></div></div></div>');
+    })()`);
+    await settle();
+    assert.deepEqual(await evaluate(`(() => {
+      const q = s => document.querySelector(s);
+      const css = s => getComputedStyle(q(s));
+      return {toolbar: [css('[aria-label="Add media"]').width, css('[aria-label="Add media"] svg').width, css('[aria-label="Generate image"]').display],
+        participant: css('#participant').color, cta: [css('#message-cta').color, css('#message-cta').borderRadius, q('#message-cta svg').dataset.exiterIcon],
+        primaryName: [css('article a > .font-bold').fontWeight, css('article a > .font-bold').textTransform],
+        search: css('[data-slot="xds-combobox-content"]').borderRadius,
+        summary: [css('[data-exiter-profile-preview]').borderRadius, css('[data-exiter-profile-preview] a').color, css('[data-exiter-profile-summary-action]').borderRadius, q('[data-exiter-profile-summary-action] svg').dataset.exiterIcon]};
+    })()`), { toolbar: ['32px', '16px', 'none'], participant: 'rgb(250, 250, 250)', cta: ['rgb(250, 250, 250)', String(settings.radius) + 'px', 'messageSquare'],
+      primaryName: ['600', 'uppercase'], search: String(settings.radius + 4) + 'px', summary: [String(settings.radius + 4) + 'px', 'rgb(250, 250, 250)', String(settings.radius) + 'px', 'sparkles'] });
+    await evaluate(`(() => {
+      history.pushState({}, '', '/i/chat');
+      const host = document.createElement('div');
+      host.className = '[--dm-bottom-inset:0px]';
+      document.querySelector('main').append(host);
+      setTimeout(() => {
+        host.attachShadow({ mode: 'open' }).innerHTML = '<style>:host{--radius:8px}</style><div data-xchat-root style="font-family:Arial"><button data-testid="dm-new-chat-button" data-slot="xds-button" style="border-radius:999px">New message</button><input data-testid="dm-search-input" style="border-radius:999px"></div>';
+      }, 80);
+    })()`);
+    await evaluate(`new Promise(resolve => {
+      const deadline = performance.now() + 3000;
+      const waitForSkin = () => {
+        const host = document.querySelector('main div[class*="--dm-bottom-inset:"]');
+        if (host?.shadowRoot?.getElementById('exiter-chat-css') || performance.now() >= deadline) resolve();
+        else setTimeout(waitForSkin, 50);
+      };
+      waitForSkin();
+    })`);
+    assert.deepEqual(await evaluate(`(() => {
+      const root = document.querySelector('main div[class*="--dm-bottom-inset:"]').shadowRoot;
+      return [root.querySelectorAll('#exiter-chat-css').length, getComputedStyle(root.querySelector('button')).fontFamily.split(',')[0],
+        getComputedStyle(root.querySelector('button')).borderRadius, getComputedStyle(root.querySelector('input')).borderRadius];
+    })()`), [1, '"Exiter Geist"', String(settings.radius) + 'px', String(settings.radius) + 'px']);
     console.log(`Passed ${cases} rail/fill cases, media viewers, profiles, sidebar clicks, palette controls, unread badges, reading shortcuts and restoration, motion, loading states, pins, in-page compose, and Settings.`);
+    console.log('Passed new X layout at 700px and 1220px, including feed width, icons, typography, and virtualized ad spacing after loading new posts.');
     app.exit(0);
   } catch (error) {
     console.error(error);

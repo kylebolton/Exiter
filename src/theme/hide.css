@@ -11,8 +11,13 @@ html[data-ex-hide-logo] header[role="banner"] h1 { display: none !important; }
 html[data-ex-hide-floating] [data-testid="GrokDrawer"],
 html[data-ex-hide-floating] [data-testid="chat-drawer-root"] { display: none !important; }
 
+/* The live Spaces carousel sits in its own wrapper in X's sticky timeline header. */
+header[data-page-header] > div:has(> div[class~="group/carousel"] [role="list"] > [role="listitem"] > a[href^="/i/spaces/"][href$="/peek"]) { display: none !important; }
+
 /* Promoted posts and cards (marked by preload.js) */
 html[data-ex-hide-ads] [data-exiter-ad="1"] { display: none !important; }
+/* X's virtualized list ignores zero-height measurements and keeps the ad's old height. */
+html[data-ex-hide-ads] main [id^="urt:"] ul > li[data-index]:has(> [data-exiter-ad="1"]) { min-height: 1px !important; }
 
 /* Suggestions: Premium upsells and "Who to follow" modules inside the timeline */
 html[data-ex-hide-suggest] aside[aria-label*="Premium" i],

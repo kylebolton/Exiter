@@ -27,30 +27,48 @@ button[data-exiter-refresh][aria-busy="true"] { color: var(--foreground) !import
 [data-exiter-hdr-actions] { flex-direction: row !important; width: auto !important; align-items: center !important; padding-right: 8px; gap: 2px; }
 
 /* "See new posts" pill: a shadcn floating button. X slides its wrapper into view itself, so only the button is styled (no extra entrance motion). */
-button[aria-label^="New posts are available"] {
+:is(button[aria-label^="New posts are available"], [role="status"][data-top-chrome-follow] button) {
   height: 36px !important; padding: 0 14px 0 12px !important; box-sizing: border-box;
   background: var(--background) !important; color: var(--foreground) !important;
   border: 1px solid var(--border) !important; border-radius: var(--radius-lg) !important;
   box-shadow: var(--shadow-pop) !important; cursor: pointer; transition: background-color var(--ex-dur-fast) var(--ex-ease), transform var(--ex-dur-fast) var(--ex-ease), box-shadow var(--ex-dur-fast) var(--ex-ease);
 }
-button[aria-label^="New posts are available"]:active { transform: scale(0.97); }
-button[aria-label^="New posts are available"]:hover { background: var(--muted) !important; }
+:is(button[aria-label^="New posts are available"], [role="status"][data-top-chrome-follow] button):active { transform: scale(0.97); }
+:is(button[aria-label^="New posts are available"], [role="status"][data-top-chrome-follow] button):hover { background: var(--muted) !important; }
 button[aria-label^="New posts are available"] > div { display: flex !important; align-items: center !important; gap: 8px; }
-button[aria-label^="New posts are available"] svg { width: 16px !important; height: 16px !important; color: var(--foreground) !important; }
-button[aria-label^="New posts are available"] [data-testid="pillLabel"], button[aria-label^="New posts are available"] [data-testid="pillLabel"] * {
+:is(button[aria-label^="New posts are available"], [role="status"][data-top-chrome-follow] button) svg[data-exiter-icon="arrowUp"] { width: 16px !important; height: 16px !important; color: var(--foreground) !important; }
+button[aria-label^="New posts are available"] [data-testid="pillLabel"], button[aria-label^="New posts are available"] [data-testid="pillLabel"] *,
+[role="status"][data-top-chrome-follow] button > span:last-child {
   color: var(--foreground) !important; font-size: 13px !important; font-weight: 500 !important; line-height: 20px !important;
 }
+[role="status"][data-top-chrome-follow] button { gap: 8px !important; max-width: calc(100vw - var(--rail-w) - 32px); }
+[role="status"][data-top-chrome-follow] button > span { margin: 0 !important; }
+[role="status"][data-top-chrome-follow] button .x-avatar { width: 20px !important; height: 20px !important; box-shadow: 0 0 0 2px var(--background); }
 
 /* ---------- Post rows (hairline-divided, not cards) ---------- */
 article[data-testid="tweet"] { transition: background-color 0.12s ease; padding: calc(var(--ex-pad) - 16px) var(--ex-pad); }
 [data-testid="cellInnerDiv"]:hover article[data-testid="tweet"] { background: var(--hover-tint); }
-article [data-testid="tweetText"] { font-size: var(--ex-font-size); line-height: var(--ex-leading) !important; }
+article [data-testid="tweetText"] { font-size: var(--ex-font-size) !important; line-height: var(--ex-leading) !important; }
 article [data-testid="User-Name"] { font-size: 14px; }
 article [data-testid="User-Name"] a:first-child span { font-weight: 600; }
 article time, article [data-testid="User-Name"] [dir="ltr"] { font-variant-numeric: tabular-nums; }
 article [data-testid^="UserAvatar-Container"] img { box-shadow: 0 0 0 1px var(--border); }
 [data-testid="tweet-text-show-more-link"], [data-testid="tweet-text-show-more-link"] span { color: var(--muted-foreground) !important; text-decoration: underline; text-underline-offset: 2px; }
 a[href^="/hashtag"], [data-testid="tweetText"] a { color: var(--foreground) !important; text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--foreground) 30%, transparent); text-underline-offset: 2px; }
+/* X's reply context and participant links also occur outside the post body. */
+:is(article, form:has(textarea[aria-autocomplete="list"][aria-multiline="true"])) :is(a, button, span).text-brand {
+  color: var(--foreground) !important;
+  text-decoration-color: color-mix(in srgb, var(--foreground) 30%, transparent);
+  text-underline-offset: 2px;
+}
+article a[data-slot="xds-button"][href^="/messages/compose?"] {
+  min-height: 32px; border: 1px solid var(--border) !important; border-radius: var(--radius) !important;
+  background: var(--background) !important; color: var(--foreground) !important;
+  font-size: 14px !important; font-weight: 500 !important; text-decoration: none !important;
+}
+article a[data-slot="xds-button"][href^="/messages/compose?"]:is(:hover, :focus-visible) { background: var(--muted) !important; }
+article a[data-slot="xds-button"][href^="/messages/compose?"] svg { width: 16px !important; height: 16px !important; }
+article button[aria-label="Explain this post"] svg { width: 16px !important; height: 16px !important; }
 
 /* Media + quote cards: one radius, one hairline, capped width (preload.js tags the quote-card border box) */
 article [data-testid="tweetPhoto"], article [data-testid="videoPlayer"], article [data-testid="card.wrapper"] { border-radius: var(--radius-lg) !important; overflow: hidden; }
@@ -72,7 +90,6 @@ article [role="group"] button:hover > div > div:first-child { background: var(--
 [data-testid="removeBookmark"], [data-testid="unretweet"] { color: var(--foreground) !important; }
 
 html[data-ex-density="compact"] article [data-testid="tweetText"] { line-height: 1.4 !important; }
-html[data-ex-density="compact"] article[data-testid="tweet"] { zoom: 0.94; }
 
 /* Handle + timestamp row: smaller than the name, muted, and it shrinks/truncates instead of wrapping or overflowing */
 article [data-testid="User-Name"] > div:nth-child(2) { min-width: 0; font-size: 13px; }
@@ -87,6 +104,7 @@ html[data-ex-caps="all"] article [data-testid="User-Name"] > div:nth-child(2) sp
 
 /* Lucide icons swapped in by preload.js: thin strokes */
 svg[data-exiter-icon] { fill: none !important; stroke: currentColor !important; stroke-width: 1.5 !important; stroke-linecap: round; stroke-linejoin: round; overflow: visible; }
+svg[data-exiter-icon] > :not([data-exiter-glyph]) { display: none !important; }
 svg[data-exiter-icon] * { fill: none !important; stroke: currentColor !important; }
 svg[data-exiter-icon="ellipsis"] circle, svg[data-exiter-icon="smile"] line { stroke-width: 2 !important; }
 svg[data-exiter-icon$="-on"], svg[data-exiter-icon$="-on"] path { fill: currentColor !important; }
@@ -100,23 +118,21 @@ button[aria-label^="New posts are available"] [data-testid^="UserAvatar-Containe
 button[aria-label^="New posts are available"] [data-testid^="UserAvatar-Container"] > div, button[aria-label^="New posts are available"] [data-testid^="UserAvatar-Container"] > div > div { width: 20px !important; height: 20px !important; padding: 0 !important; }
 button[aria-label^="New posts are available"]:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 
-/* ---------- Inline "Show N posts" row (preload.js tags the cell): a quiet ghost button instead of X-blue text ---------- */
-[data-exiter-showposts] [role="button"], [data-exiter-showposts] a, [data-exiter-showposts] button { cursor: pointer; }
-[data-exiter-showposts] [role="button"], [data-exiter-showposts] a, [data-exiter-showposts] button,
-[data-exiter-showposts] > div > div { min-height: 40px; box-sizing: border-box; }
-[data-exiter-showposts] [role="button"], [data-exiter-showposts] a, [data-exiter-showposts] button {
-  display: flex !important; align-items: center !important; justify-content: center !important; gap: 8px; width: 100%;
-  background: transparent !important; transition: background-color var(--ex-dur-fast) var(--ex-ease), scale var(--ex-dur-fast) var(--ex-ease);
+/* ---------- Inline "Show N posts" button ---------- */
+[data-exiter-showposts-button] {
+  display: flex !important; align-items: center !important; justify-content: center !important; gap: 8px !important;
+  width: 100% !important; min-height: 40px !important; box-sizing: border-box; cursor: pointer;
+  background: transparent !important; border-radius: var(--radius) !important;
+  transition: background-color var(--ex-dur-fast) var(--ex-ease), scale var(--ex-dur-fast) var(--ex-ease);
 }
-[data-exiter-showposts] [role="button"]:hover, [data-exiter-showposts] a:hover, [data-exiter-showposts] button:hover { background: var(--hover-tint) !important; }
-[data-exiter-showposts] [role="button"]:active, [data-exiter-showposts] a:active, [data-exiter-showposts] button:active { scale: 0.99; }
-[data-exiter-showposts] span, [data-exiter-showposts] div[dir] {
+[data-exiter-showposts-button]:hover { background: var(--hover-tint) !important; }
+[data-exiter-showposts-button]:active { scale: 0.99; }
+[data-exiter-showposts-button], [data-exiter-showposts-button] :is(div, span) {
   color: var(--muted-foreground) !important; font-size: 13px !important; font-weight: 500 !important; line-height: 20px !important; font-variant-numeric: tabular-nums; text-decoration: none !important;
 }
-[data-exiter-showposts] [role="button"]:hover span, [data-exiter-showposts] a:hover span, [data-exiter-showposts] button:hover span { color: var(--foreground) !important; }
-[data-exiter-showposts] svg[data-exiter-added] { width: 16px !important; height: 16px !important; flex: none; color: var(--muted-foreground); margin-right: 6px; }
-[data-exiter-showposts] [role="button"]:hover svg[data-exiter-added], [data-exiter-showposts] a:hover svg[data-exiter-added] { color: var(--foreground); }
-@media (prefers-reduced-motion: reduce) { [data-exiter-showposts] [role="button"], [data-exiter-showposts] a, [data-exiter-showposts] button { transition: none !important; } [data-exiter-showposts] :active { scale: none !important; } }
+[data-exiter-showposts-button]:is(:hover, :focus-visible), [data-exiter-showposts-button]:is(:hover, :focus-visible) :is(div, span) { color: var(--foreground) !important; }
+[data-exiter-showposts-button] svg[data-exiter-showposts-arrow] { width: 16px !important; height: 16px !important; flex: none; }
+@media (prefers-reduced-motion: reduce) { [data-exiter-showposts-button] { transition: none !important; scale: none !important; } }
 
 /* "Show N posts" pill with poster avatars: the stack is one centred 20px row, whatever offsets X gives its wrappers, and the label shares the centre line */
 button[aria-label^="New posts are available"] > div { align-items: center !important; }

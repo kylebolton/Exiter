@@ -2,14 +2,16 @@
    DOM: form[role=search] > div:first-child (input) + div:nth-child(2) (0-height anchor) > div (dropdown) > [role=listbox] */
 
 /* X nests two bordered boxes (44px + 42px) = a doubled stroke. Keep one hairline on the outer box, none on the inner. */
-form[role="search"] > div:first-child > div {
+form[role="search"] > div:first-child:not([role="group"]) > div,
+form[role="search"] > [role="group"]:has(> input[role="combobox"]) {
   border: 1px solid var(--border) !important; border-radius: var(--radius-input) !important; background: transparent !important;
   transition: border-color var(--ex-dur-fast) var(--ex-ease), box-shadow var(--ex-dur-fast) var(--ex-ease);
 }
-form[role="search"] > div:first-child > div > div { border: 0 !important; border-radius: calc(var(--radius-input) - 1px) !important; background: transparent !important; box-shadow: none !important; }
-form[role="search"] > div:first-child > div:hover { border-color: color-mix(in srgb, var(--ring) 70%, var(--border)) !important; }
+form[role="search"] > div:first-child:not([role="group"]) > div > div { border: 0 !important; border-radius: calc(var(--radius-input) - 1px) !important; background: transparent !important; box-shadow: none !important; }
+form[role="search"] > div:first-child:not([role="group"]) > div:hover { border-color: color-mix(in srgb, var(--ring) 70%, var(--border)) !important; }
 /* Focus: X paints it in its blue; use a soft neutral ring */
-form[role="search"]:focus-within > div:first-child > div { border-color: var(--ring) !important; box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 16%, transparent) !important; }
+form[role="search"]:focus-within > div:first-child:not([role="group"]) > div,
+form[role="search"] > [role="group"]:has(> input[role="combobox"]:focus) { border-color: var(--ring) !important; box-shadow: 0 0 0 3px color-mix(in srgb, var(--ring) 16%, transparent) !important; }
 form[role="search"] input { font-size: 14px !important; font-weight: 400 !important; letter-spacing: -0.006em; color: var(--foreground) !important; caret-color: var(--foreground); }
 form[role="search"] input::placeholder { color: var(--muted-foreground) !important; }
 form[role="search"] svg { width: 16px !important; height: 16px !important; color: var(--muted-foreground) !important; }
@@ -66,6 +68,21 @@ form[role="search"] [data-testid="typeaheadResult"] > button svg * { stroke: var
 form[role="search"] [data-testid="typeaheadResult"] > button span:first-child { font-weight: 500; }
 form[role="search"] [data-testid="TypeaheadUser"] [dir="ltr"] span:has(svg) { display: inline-flex; }
 form[role="search"] [data-testid="typeaheadResult"] { padding-block: 0; }
+
+/* The new search dropdown is anchored to the input but rendered outside the form. */
+[data-slot="xds-combobox-content"]:has([data-slot="xds-combobox-list"][aria-label="Search results"]) {
+  background: var(--background) !important; color: var(--foreground);
+  border: 1px solid var(--border) !important; border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-pop) !important;
+}
+[data-slot="xds-combobox-list"][aria-label="Search results"] { padding: 6px; }
+[data-slot="xds-combobox-list"][aria-label="Search results"] [data-slot="xds-combobox-item"] {
+  border-radius: var(--radius) !important; min-height: 36px; padding: 6px 10px !important; font-size: 14px !important;
+}
+[data-slot="xds-combobox-list"][aria-label="Search results"] [data-slot="xds-combobox-item"]:is(:hover, [data-highlighted]) { background: var(--muted) !important; }
+[data-slot="xds-combobox-list"][aria-label="Search results"] :is(button, [role="button"]) { border-radius: var(--radius) !important; }
+[data-slot="xds-combobox-list"][aria-label="Search results"] .x-avatar { width: 32px !important; height: 32px !important; }
+[data-slot="xds-combobox-list"][aria-label="Search results"] svg { width: 16px !important; height: 16px !important; color: var(--muted-foreground); }
 
 @media (prefers-reduced-motion: reduce) { form[role="search"] > div:nth-child(2) > div { animation: none; } }
 

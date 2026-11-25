@@ -1,7 +1,7 @@
 {
   "name": "exiter",
   "productName": "Exiter",
-  "version": "0.4.3",
+  "version": "0.4.4",
   "description": "A sleek, reskinned desktop client for X",
   "main": "src/main.js",
   "author": "Kyle Bolton <hello@kylebolton.me>",

@@ -2,13 +2,13 @@
    Selectors use data-testid / aria / inline-style hooks (hashed X classes change too often). preload.js tags quoted posts with data-exiter-quote. */
 
 /* ---------- Quote card: flat hairline card ---------- */
-[data-exiter-quote] {
+:is([data-exiter-quote], article [data-slot="embedded-tweet-frame"]) {
   border: 1px solid var(--border) !important; border-radius: var(--radius-lg) !important; background: transparent !important;
   box-shadow: none !important; overflow: hidden; box-sizing: border-box;
   margin-top: max(0px, calc(var(--ex-gap) - 12px));
   transition: background-color var(--ex-dur-fast) var(--ex-ease);
 }
-[data-exiter-quote]:hover { background: var(--hover-tint) !important; }
+:is([data-exiter-quote], article [data-slot="embedded-tweet-frame"]):hover { background: var(--hover-tint) !important; }
 [data-exiter-quote] * { border-color: var(--border); }
 /* Header: 20px avatar, name 600, handle + time muted on the same line */
 [data-exiter-quote] [data-testid^="UserAvatar-Container"], [data-exiter-quote] [data-testid^="UserAvatar-Container"] > div,
@@ -16,7 +16,6 @@
 [data-exiter-quote] [data-testid^="UserAvatar-Container"] { margin-right: 8px; }
 [data-exiter-quote] [data-testid="User-Name"] { font-size: 14px; }
 [data-exiter-quote] [data-testid="User-Name"] > div:nth-child(2) { display: inline-flex; align-items: center; gap: 4px; }
-article [data-exiter-quote] [data-testid="tweetText"] { font-size: 14px; line-height: var(--ex-leading) !important; }
 [data-exiter-quote] [data-testid="tweetPhoto"], [data-exiter-quote] [data-testid="videoPlayer"] { border-radius: var(--radius) !important; }
 html[data-ex-density="airy"] [data-exiter-quote] { padding: 4px; }
 
@@ -37,7 +36,7 @@ article [data-testid="card.wrapper"] div[dir] span { letter-spacing: -0.006em; }
 [data-testid="cardPoll"] span { font-size: 14px !important; font-variant-numeric: tabular-nums; }
 
 /* ---------- Verified badge: neutral line icon (swapped in by preload.js) ---------- */
-svg[data-testid="icon-verified"] { width: 14px !important; height: 14px !important; color: var(--foreground) !important; flex: none; }
+:is(svg[data-testid="icon-verified"], svg[aria-label="Verified account"][data-exiter-icon]) { width: 14px !important; height: 14px !important; color: var(--foreground) !important; flex: none; }
 
 /* ---------- Remaining X-blue text -> neutral ---------- */
 article [style*="color: rgb(29, 155, 240)"], [data-testid="primaryColumn"] [style*="color: rgb(29, 155, 240)"] { color: var(--foreground) !important; }
@@ -66,6 +65,21 @@ article [data-testid="User-Name"] svg { vertical-align: -2px; }
 [data-testid="HoverCard"] [data-testid="UserDescription"], [data-testid="HoverCard"] [data-testid="UserDescription"] span { font-size: 14px !important; line-height: 20px !important; }
 /* Bio links and mentions (hover card, profile): neutral with a quiet underline, like post text links */
 [data-testid="UserDescription"] a, [data-testid="UserDescription"] a span { color: var(--foreground) !important; text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--foreground) 30%, transparent); text-underline-offset: 2px; }
+[data-exiter-profile-preview] {
+  background: var(--background) !important; color: var(--foreground);
+  border: 1px solid var(--border) !important; border-radius: var(--radius-lg) !important; box-shadow: var(--shadow-pop) !important;
+}
+[data-exiter-profile-preview] a.text-brand {
+  color: var(--foreground) !important; text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--foreground) 30%, transparent); text-underline-offset: 2px;
+}
+[data-exiter-profile-summary-action] {
+  min-height: 36px !important; border: 1px solid var(--border) !important; border-radius: var(--radius) !important;
+  background: var(--background) !important; color: var(--foreground) !important;
+  font-size: 14px !important; font-weight: 500 !important;
+}
+[data-exiter-profile-summary-action]:is(:hover, :focus-visible) { background: var(--muted) !important; }
+[data-exiter-profile-summary-action] svg { width: 16px !important; height: 16px !important; }
 
 /* Name row: the display name (14px, optionally capitalised) and the handle/time (13px) sit on one centre line with equal line boxes */
 article [data-testid="User-Name"] { align-items: center !important; }

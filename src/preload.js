@@ -40,58 +40,91 @@ const ICONS = {
   settings: '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
   fileText: '<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>',
   users: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  phone: '<path d="M7 3H4a1 1 0 0 0-1 1c0 9.4 7.6 17 17 17a1 1 0 0 0 1-1v-3l-5-2-2 2a14 14 0 0 1-7-7l2-2-2-5Z"/>',
+  lockOpen: '<rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1M12 15v2"/>',
+  sparkles: '<path d="M12 3l2.3 6.7L21 12l-6.7 2.3L12 21l-2.3-6.7L3 12l6.7-2.3L12 3Z"/><path d="M20 2v4m-2-2h4M4 18v4m-2-2h4"/>',
 };
+
+const RAIL = '[data-rail-overflow] nav';
+const NOTIFICATIONS_LINK = `a[data-testid="AppTabBar_Notifications_Link"], ${RAIL} a[href="/notifications"]`;
+const PROFILE_LINK = `a[data-testid="AppTabBar_Profile_Link"], ${RAIL} a[aria-label="Profile"]`;
+const POST_BUTTON = '[data-testid="SideNav_NewTweet_Button"], #sidebar-compose-post';
+const EDITOR = `[data-testid="tweetTextarea_0"], :is(main, [role="dialog"]) textarea[aria-multiline="true"][aria-autocomplete="list"]`;
+const NEW_POSTS_PILL = 'button[aria-label^="New posts are available"], [role="status"][data-top-chrome-follow] button';
 
 // [CSS selector for the control, icon name, optional state class]
 const ICON_MAP = [
-  ['a[data-testid="AppTabBar_Home_Link"]', 'house'],
-  ['a[data-testid="AppTabBar_Explore_Link"]', 'search'],
-  ['a[data-testid="AppTabBar_Notifications_Link"]', 'bell'],
-  ['a[data-testid="AppTabBar_DirectMessage_Link"]', 'messageSquare'],
-  ['a[data-testid="AppTabBar_Profile_Link"]', 'user'],
-  ['button[data-testid="AppTabBar_More_Menu"]', 'ellipsis'],
-  ['[data-testid="reply"]', 'messageCircle'],
-  ['[data-testid="retweet"], [data-testid="unretweet"]', 'repeat'],
-  ['[data-testid="like"]', 'heart'],
-  ['[data-testid="unlike"]', 'heart', 'on'],
-  ['[data-testid="bookmark"]', 'bookmark'],
-  ['[data-testid="removeBookmark"]', 'bookmark', 'on'],
+  [`a[data-testid="AppTabBar_Home_Link"], ${RAIL} a[href="/home"]`, 'house'],
+  [`a[data-testid="AppTabBar_Explore_Link"], ${RAIL} a[href="/explore"]`, 'search'],
+  [NOTIFICATIONS_LINK, 'bell'],
+  [`a[data-testid="AppTabBar_DirectMessage_Link"], ${RAIL} a:is([href="/i/chat"], [href="/messages"])`, 'messageSquare'],
+  [PROFILE_LINK, 'user'],
+  [`button[data-testid="AppTabBar_More_Menu"], ${RAIL} button[aria-label="More menu items"]`, 'ellipsis'],
+  [`${RAIL} a:is([href="/i/bookmarks"], [href="/i/history"])`, 'bookmark'],
+  [`${RAIL} a[href="/i/calls"]`, 'phone'],
+  [`${RAIL} a:is([href="/i/premium"], [href="/i/verified-orgs-signup"])`, 'badgeCheck'],
+  [`${RAIL} a[href$="/lists"]`, 'list'],
+  [`${RAIL} a[href*="/communities"]`, 'users'],
+  [`${RAIL} a[href="/compose/articles"]`, 'fileText'],
+  ['[data-testid="reply"], [data-engagement-action="reply"] a', 'messageCircle'],
+  ['[data-testid="retweet"], [data-testid="unretweet"], [data-engagement-action="retweet"] button', 'repeat'],
+  ['[data-testid="like"], [data-engagement-action="like"] button:not([aria-pressed="true"])', 'heart'],
+  ['[data-testid="unlike"], [data-engagement-action="like"] button[aria-pressed="true"]', 'heart', 'on'],
+  ['[data-testid="bookmark"], article button[aria-label="Bookmark"]', 'bookmark'],
+  ['[data-testid="removeBookmark"], article button[aria-label="Remove bookmark" i]', 'bookmark', 'on'],
   ['article a[href$="/analytics"]', 'chart'],
-  ['article button[aria-label="Share post"]', 'share'],
+  ['article button[aria-label="Share post"], article button[data-engagement-action="share"]', 'share'],
+  ['article button[aria-label="More"]', 'ellipsis'],
+  ['main button[aria-label="Back"]', 'arrowLeft'],
+  ['article button[aria-label="Explain this post"], [data-exiter-profile-summary-action]', 'sparkles'],
+  ['article a[href^="/messages/compose?"][data-slot="xds-button"]', 'messageSquare'],
+  ['[data-slot="xds-combobox-input-group"]', 'search'],
   ['button[aria-label="Manage timelines"]', 'plus'],
-  ['button[aria-label^="New posts are available"]', 'arrowUp'],
-  ['button[aria-label="Add photos or video"]', 'image'],
-  ['[data-testid="gifSearchButton"]', 'gif'],
-  ['[data-testid="createPollButton"]', 'list'],
+  ['[role="tab"]:has(svg[data-icon="icon-chevron-down-md"])', 'chevronDown'],
+  [NEW_POSTS_PILL, 'arrowUp'],
+  ['button:is([aria-label="Add photos or video"], [aria-label="Add media"])', 'image'],
+  ['[data-testid="gifSearchButton"], button[aria-label="Add GIF"]', 'gif'],
+  ['[data-testid="createPollButton"], button[aria-label="Add poll"]', 'list'],
   ['button[aria-label="Add emoji"]', 'smile'],
-  ['[data-testid="scheduleOption"]', 'calendarClock'],
-  ['[data-testid="geoButton"]', 'mapPin'],
+  ['[data-testid="scheduleOption"], button[aria-label="Schedule post"]', 'calendarClock'],
+  ['[data-testid="geoButton"], button[aria-label="Add location"]', 'mapPin'],
+  ['button[aria-label^="Who can reply"]:has(svg[data-icon="icon-lock-unlocked"])', 'lockOpen'],
 ];
 
 function swapIcon(svg, name, state) {
   svg.setAttribute('viewBox', '0 0 24 24');
   svg.setAttribute('data-exiter-icon', name + (state ? '-' + state : ''));
-  svg.innerHTML = ICONS[name];
+  let glyph = svg.querySelector(':scope > [data-exiter-glyph]');
+  if (!glyph) {
+    // Keep X's SVG children attached so React can update them on the next render.
+    glyph = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    glyph.setAttribute('data-exiter-glyph', '');
+    svg.appendChild(glyph);
+  }
+  glyph.innerHTML = ICONS[name];
 }
 
 function sweepIcons() {
   for (const [sel, name, state] of ICON_MAP) {
     document.querySelectorAll(sel).forEach((el) => {
-      const svg = el.querySelector('svg');
       const key = name + (state ? '-' + state : '');
-      if (svg && svg.getAttribute('data-exiter-icon') !== key) swapIcon(svg, name, state);
+      // X renders overlapping inactive and active glyphs in the desktop rail.
+      const icons = el.closest(RAIL) ? el.querySelectorAll('svg') : [el.querySelector('svg')];
+      for (const svg of icons) {
+        if (svg && svg.getAttribute('data-exiter-icon') !== key) swapIcon(svg, name, state);
+      }
     });
   }
 }
 
 /* X's verified badge is an <svg data-testid="icon-verified"> itself (not a wrapper), so it needs its own sweep */
 function sweepBadges() {
-  document.querySelectorAll('svg[data-testid="icon-verified"]:not([data-exiter-icon])').forEach((svg) => swapIcon(svg, 'badgeCheck'));
+  document.querySelectorAll('svg:is([data-testid="icon-verified"], [aria-label="Verified account"]):not([data-exiter-icon])').forEach((svg) => swapIcon(svg, 'badgeCheck'));
 }
 
 /* X removes the Post icon when its own navigation expands. Keep our rail's control present. */
 function ensurePostIcon() {
-  const post = document.querySelector('[data-testid="SideNav_NewTweet_Button"]');
+  const post = document.querySelector(POST_BUTTON);
   if (!post) return;
   const icons = [...post.querySelectorAll('svg')];
   let svg = icons.find(icon => !icon.hasAttribute('data-exiter-added')) || icons[0];
@@ -147,6 +180,17 @@ function tagProfileHeader() {
   header.querySelector('[data-testid^="UserAvatar-Container"]')?.setAttribute('data-exiter-profile-avatar', '');
 }
 
+/* X's profile previews are portalled and omit the legacy HoverCard test ID. */
+function tagProfilePreviews() {
+  const popups = document.querySelectorAll('[data-base-ui-portal] [role="presentation"] > [data-base-ui-focusable][data-side]');
+  for (const popup of popups) {
+    const summary = [...popup.querySelectorAll('button[data-slot="xds-button"]')].find(button => button.textContent.trim() === 'Profile Summary');
+    const profileLinks = popup.querySelector('a[href$="/following"]') && popup.querySelector('a:is([href$="/followers"], [href$="/verified_followers"])');
+    popup.toggleAttribute('data-exiter-profile-preview', !!(summary || profileLinks));
+    summary?.setAttribute('data-exiter-profile-summary-action', '');
+  }
+}
+
 /* ---------- More menu: swap X's glyphs for Lucide, matched by label (hrefs differ per account) ---------- */
 const MENU_ICONS = { 'lists': 'fileText', 'communities': 'users', 'business': 'zap', 'ads': 'squareArrowOutUpRight', 'create your space': 'mic', 'settings and privacy': 'settings' };
 function sweepMenuIcons() {
@@ -157,24 +201,26 @@ function sweepMenuIcons() {
   });
 }
 
-/* ---------- Inline "Show N posts" banner: tag its timeline cell so CSS can restyle it, and give it an arrow ---------- */
+/* ---------- Inline "Show N posts" control, including X's newer timeline ---------- */
 const SHOW_POSTS = /^Show \d+\+? (new )?posts?$/i;
+const SHOW_POSTS_CONTROL = '[data-exiter-showposts-button]';
 function tagShowPosts() {
-  document.querySelectorAll('[data-testid="cellInnerDiv"]:not([data-exiter-showposts]):not(:has(article))').forEach((cell) => {
-    const t = (cell.textContent || '').trim();
-    if (t.length > 30 || !SHOW_POSTS.test(t)) return;
-    cell.setAttribute('data-exiter-showposts', '1');
-  });
-  document.querySelectorAll('[data-exiter-showposts]:not([data-exiter-arrow])').forEach((cell) => {
-    const label = [...cell.querySelectorAll('span')].find((s) => s.children.length === 0 && SHOW_POSTS.test(s.textContent.trim()));
-    if (!label) return;
-    cell.setAttribute('data-exiter-arrow', '1');
+  const controls = document.querySelectorAll(`
+    [data-testid="cellInnerDiv"]:not(:has(article)) :is(button, [role="button"], a),
+    main [id^="urt:"] button:not(article *, [role="dialog"] *, [aria-label^="New posts are available"])
+  `);
+  for (const control of controls) {
+    const showPosts = SHOW_POSTS.test(control.textContent.trim());
+    control.toggleAttribute('data-exiter-showposts-button', showPosts);
+    const arrow = control.querySelector('svg[data-exiter-showposts-arrow]');
+    if (!showPosts) { arrow?.remove(); continue; }
+    if (arrow) continue;
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     swapIcon(svg, 'arrowUp');
     svg.setAttribute('aria-hidden', 'true');
-    svg.setAttribute('data-exiter-added', '1');
-    label.parentElement.insertBefore(svg, label);
-  });
+    svg.setAttribute('data-exiter-showposts-arrow', '');
+    control.prepend(svg);
+  }
 }
 
 /* ---------- Composer input box: tag the single ancestor X draws a border on ---------- */
@@ -198,12 +244,12 @@ function tagComposerInput() {
 let userInteracted = false;
 ['pointerdown', 'keydown'].forEach((t) => window.addEventListener(t, () => { userInteracted = true; }, { capture: true, once: false }));
 document.addEventListener('focusin', (e) => {
-  if (!userInteracted && e.target && e.target.closest && e.target.closest('[data-testid="tweetTextarea_0"]')) setTimeout(releaseAutofocus, 0);
+  if (!userInteracted && e.target.closest?.(EDITOR)) setTimeout(releaseAutofocus, 0);
 }, true);
 function releaseAutofocus() {
   if (userInteracted) return;
   const a = document.activeElement;
-  if (a && a.closest && a.closest('[data-testid="tweetTextarea_0"]') && typeof a.blur === 'function') a.blur();
+  if (a?.closest(EDITOR)) a.blur();
 }
 
 /* ---------- Quote cards: tag the wide rounded-border box so CSS can cap it with the media ---------- */
@@ -279,6 +325,12 @@ function sweepAds() {
       }
     }
   });
+  // The new timeline puts its ad label beside the byline inside the clickable post row.
+  for (const row of document.querySelectorAll('[role="link"][data-href]:has(> article)')) {
+    const labels = row.querySelectorAll('article [class~="@container/post-actions"] > .x-middot-group + div > a');
+    if ([...labels].some(label => isAdLabel(label.textContent.trim()))) row.setAttribute('data-exiter-ad', '1');
+    else row.removeAttribute('data-exiter-ad');
+  }
 }
 
 /* ---------- Route + pill tracking ---------- */
@@ -303,7 +355,7 @@ function trackRoute() {
 }
 let lastPill = '';
 function tickPill() {
-  const pill = document.querySelector('button[aria-label^="New posts are available"]');
+  const pill = document.querySelector(NEW_POSTS_PILL);
   const label = pill ? (pill.textContent || '').trim() : '';
   if (label && lastPill && label !== lastPill) {
     pill.setAttribute('data-ex-tick', '');
@@ -314,8 +366,6 @@ function tickPill() {
 
 /* Read the unread indicator that X already keeps current, including while the
    window is hidden. A fresh document or account establishes a baseline. */
-const NOTIFICATIONS_LINK = 'a[data-testid="AppTabBar_Notifications_Link"]';
-const PROFILE_LINK = 'a[data-testid="AppTabBar_Profile_Link"]';
 let unread;
 let unreadAccount;
 let unreadTimer;
@@ -352,17 +402,37 @@ function scheduleUnread() {
 }
 
 let queued = false;
+let chatSkinTimer;
+let chatCss;
+function styleChat(retries = 50) {
+  if (!/^\/i\/chat(?:\/|$)/.test(location.pathname)) return;
+  const root = document.querySelector('main div[class*="--dm-bottom-inset:"]')?.shadowRoot;
+  if (root?.querySelector('[data-xchat-root]')) {
+    if (root.getElementById('exiter-chat-css')) return;
+    const style = document.createElement('style');
+    style.id = 'exiter-chat-css';
+    style.textContent = chatCss ??= ipcRenderer.sendSync('exiter:get-css', 'chat');
+    root.appendChild(style);
+  } else if (chatSkinTimer === undefined && retries > 0) {
+    chatSkinTimer = setTimeout(() => {
+      chatSkinTimer = undefined;
+      styleChat(retries - 1);
+    }, 200);
+  }
+}
+
 function schedule() {
   if (queued) return;
   queued = true;
   requestAnimationFrame(() => {
     queued = false;
     trackRoute();
+    styleChat();
     syncWorkspace();
     syncTimelineLoading();
     restoreReadingPosition();
     warmGallery();
-    tagMediaViewer(); tagProfileHeader(); sweepAds(); sweepIcons(); markPostActionChanges(); sweepBadges(); ensurePostIcon(); sweepMenuIcons(); tagShowPosts(); tagComposerInput(); ensureRefreshButton(); releaseAutofocus(); tagQuoteCards(); tagQuotedPosts(); tagPills(); tickPill();
+    tagMediaViewer(); tagProfileHeader(); tagProfilePreviews(); sweepAds(); sweepIcons(); markPostActionChanges(); sweepBadges(); ensurePostIcon(); sweepMenuIcons(); tagShowPosts(); tagComposerInput(); ensureRefreshButton(); releaseAutofocus(); tagQuoteCards(); tagQuotedPosts(); tagPills(); tickPill();
     // Throttle rather than continually postponing layout work while the timeline streams in.
     if (uncapTimer === null) uncapTimer = setTimeout(() => { uncapTimer = null; uncapColumn(); }, 100);
   });
@@ -373,7 +443,7 @@ window.addEventListener('popstate', schedule);
 
 window.addEventListener('DOMContentLoaded', () => {
   new MutationObserver(schedule).observe(document.body, {
-    childList: true, subtree: true, attributes: true, attributeFilter: ['data-testid', 'aria-selected', 'href'],
+    childList: true, characterData: true, subtree: true, attributes: true, attributeFilter: ['data-testid', 'aria-selected', 'aria-pressed', 'aria-label', 'href'],
   });
   schedule();
   if (location.origin === 'https://x.com' && window === window.top) {
@@ -385,8 +455,9 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 /* ---------- Reading position, keyboard navigation, and pinned destinations ---------- */
-const PRIMARY = '[data-testid="primaryColumn"]';
-const TIMELINE = '[aria-label^="Timeline:"]';
+const PRIMARY = ':is([data-testid="primaryColumn"], main:has([data-page-header]), main:has([id^="urt:"]))';
+const TIMELINE = ':is([aria-label^="Timeline:"], [id^="urt:"])';
+const ACTIVE_TAB = '[role="tab"]:is([aria-selected="true"], [data-active]:not([aria-selected="false"]))';
 const POST_PATH = /^\/[A-Za-z0-9_]{1,15}\/status\/\d+$/;
 const FEED_PATH = /^\/(?:home|search|i\/(?:bookmarks|lists\/\d+))$/;
 const EDITING = 'input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"]';
@@ -401,14 +472,15 @@ function readingView() {
   if (!FEED_PATH.test(location.pathname)) return null;
   const route = location.pathname + location.search;
   if (route.length > 600) return null;
-  const tab = document.querySelector(`${PRIMARY} [role="tab"][aria-selected="true"]`)?.textContent.trim().slice(0, 80) || '';
+  const tab = document.querySelector(`${PRIMARY} ${ACTIVE_TAB}`)?.textContent.trim().slice(0, 80) || '';
   return { route, tab };
 }
 
 const viewKey = ({ route, tab }) => `${route}#${tab}`;
-const postLink = article => article.querySelector('a[href*="/status/"]:has(time)');
+const postLink = article => article.querySelector('a[href*="/status/"]:has(time)') || article.parentElement?.closest('[role="link"][data-href]');
 const postPath = article => {
-  const href = postLink(article)?.getAttribute('href')?.split(/[?#]/)[0];
+  const link = postLink(article);
+  const href = (link?.getAttribute('href') || link?.getAttribute('data-href'))?.split(/[?#]/)[0];
   return href && POST_PATH.test(href) ? href : null;
 };
 const feedPosts = () => [...document.querySelectorAll(`${PRIMARY} ${TIMELINE} article`)]
@@ -648,29 +720,29 @@ document.addEventListener('visibilitychange', warmGallery);
 
 /* Only animate interactions whose active state changes on a mounted, visible post. */
 const postActions = new WeakMap();
-const ON_ACTIONS = [
-  ['like', 'unlike'], ['bookmark', 'removeBookmark'], ['retweet', 'unretweet'],
+const POST_ACTIONS = [
+  ['like', 'unlike', '[data-engagement-action="like"] button', '[aria-pressed="true"]'],
+  ['bookmark', 'removeBookmark', 'button:is([aria-label="Bookmark"], [aria-label="Remove bookmark" i])', '[aria-label="Remove bookmark" i]'],
+  ['retweet', 'unretweet', '[data-engagement-action="retweet"] button', '[aria-pressed="true"]'],
 ];
-const ACTION_SELECTOR = ON_ACTIONS.flat().map(id => `[data-testid="${id}"]`).join(',');
 function markPostActionChanges() {
   for (const article of document.querySelectorAll(`${PRIMARY} article`)) {
     const path = postPath(article);
     const before = postActions.get(article);
-    const actions = [...article.querySelectorAll(ACTION_SELECTOR)];
-    const states = ON_ACTIONS.map(([off, on]) => {
-      const button = actions.find(el => el.dataset.testid === on || el.dataset.testid === off);
-      return button ? button.dataset.testid === on : undefined;
+    const actions = POST_ACTIONS.map(([off, on, selector, active]) => {
+      const button = article.querySelector(`[data-testid="${off}"], [data-testid="${on}"], ${selector}`);
+      return { button, pressed: button && (button.dataset.testid === on || button.matches(active)) };
     });
+    const states = actions.map(({ pressed }) => pressed);
     const stablePost = before && path && before.path === path;
     if (stablePost && states.some((state, index) => state !== before.states[index])) {
       const { top, bottom } = article.getBoundingClientRect();
       const visible = top < innerHeight && bottom > 0;
-      actions.forEach(button => {
-        const index = ON_ACTIONS.findIndex(pair => pair.includes(button.dataset.testid));
-        if (states[index] === before.states[index]) return;
-        button.toggleAttribute('data-exiter-action-pop', visible && before.states[index] === false && states[index] === true);
+      actions.forEach(({ button, pressed }, index) => {
+        if (pressed === before.states[index]) return;
+        button?.toggleAttribute('data-exiter-action-pop', visible && before.states[index] === false && pressed);
       });
-    } else if (!stablePost) actions.forEach(button => button.removeAttribute('data-exiter-action-pop'));
+    } else if (!stablePost) actions.forEach(({ button }) => button?.removeAttribute('data-exiter-action-pop'));
     postActions.set(article, { path, states });
   }
 }
@@ -760,9 +832,8 @@ function scrollToTop() {
   window.scrollTo({ top: 0, behavior: reduced ? 'instant' : 'smooth' });
 }
 const firstPostKey = () => {
-  const a = document.querySelector('[data-testid="primaryColumn"] article');
-  const t = a && a.querySelector('time');
-  return a ? ((t && t.parentElement && t.parentElement.getAttribute('href')) || a.textContent.slice(0, 80)) : '';
+  const article = document.querySelector(`${PRIMARY} article`);
+  return article ? postPath(article) || article.textContent.slice(0, 80) : '';
 };
 function refreshTimeline() {
   if (refreshing) return;
@@ -799,9 +870,9 @@ function refreshTimeline() {
       showStatus('Still waiting for X. You can try again.');
     } else showStatus('No timeline change yet.');
   };
-  const pill = document.querySelector('button[aria-label^="New posts are available"]');
+  const pill = [...document.querySelectorAll(`${NEW_POSTS_PILL}, ${SHOW_POSTS_CONTROL}`)].find(button => button.getClientRects().length);
   const onHome = location.pathname === '/home';
-  const tab = document.querySelector('[role="tab"][aria-selected="true"]');
+  const tab = document.querySelector(ACTIVE_TAB);
   if (!pill && !onHome && !tab) { refreshing = false; spin(false); ipcRenderer.send('exiter:reload-page'); return; }
   obs = new MutationObserver(() => {
     if (location.href !== route) finish();
@@ -898,9 +969,9 @@ ipcRenderer.on('exiter:show-notifications', () => go('/notifications'));
 ipcRenderer.on('exiter:show-home', () => go('/home'));
 function openComposer() {
   userInteracted = true;
-  const draft = location.pathname === '/compose/post' && document.querySelector('[role="dialog"] [contenteditable="true"]');
+  const draft = location.pathname === '/compose/post' && document.querySelector(`[role="dialog"] :is(${EDITOR}, [contenteditable="true"])`);
   if (draft) { draft.focus({ preventScroll: true }); return; }
-  const button = document.querySelector('[data-testid="SideNav_NewTweet_Button"]');
+  const button = document.querySelector(POST_BUTTON);
   if (button) button.click();
   else if (profilePath()) go('/compose/post');
   else if (location.pathname !== '/compose/post') location.assign('/compose/post');

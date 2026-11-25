@@ -2,7 +2,8 @@
 
 /* ---------- Base ---------- */
 html, body, #react-root { font-family: var(--ex-font) !important; letter-spacing: -0.011em; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
-html[data-ex-font] #react-root *:not(svg):not(svg *) { font-family: var(--ex-font) !important; }
+html[data-ex-font] #react-root *:not(svg, svg *),
+html[data-ex-font]:has([data-rail-overflow]) body *:not(svg, svg *) { font-family: var(--ex-font) !important; }
 html[data-ex-theme="dark"] body, html[data-ex-theme="dark"] #react-root { background-color: var(--background) !important; }
 html[data-ex-theme="dark"] [style*="background-color: rgb(0, 0, 0)"] { background-color: var(--background) !important; }
 /* clip, not hidden: overflow-x:hidden makes <body> its own scroll container, so the window never scrolls and X's scroll-driven loading/refresh stops working */

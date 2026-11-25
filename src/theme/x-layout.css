@@ -1,0 +1,198 @@
+/* X's newer renderer uses a semantic main, a separate desktop rail and urt timeline containers. */
+html:has([data-rail-overflow]) {
+  --x-font-sans: var(--ex-font) !important;
+  --x-bg-primary: var(--background) !important;
+  --x-fg-primary: var(--foreground) !important;
+  --x-fg-secondary: var(--muted-foreground) !important;
+  --x-border-normal: var(--border) !important;
+  --x-sidebar-expanded: 0 !important;
+}
+/* The desktop rail and content grid are siblings inside X's centered shell. */
+body > div:has(> div > div > div > [data-rail-overflow]),
+div:has(> div > div > [data-rail-overflow]) {
+  max-width: none !important;
+  justify-content: flex-start !important;
+}
+div:has(> [data-rail-overflow]) {
+  --x-sidebar-expanded: 0 !important;
+  width: var(--rail-w) !important;
+  box-sizing: border-box;
+  padding-top: 44px;
+}
+div:has(> div > [data-rail-overflow]) + div:has(> main) {
+  max-width: none !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+@media (min-width: 1024px) {
+  html:not([data-ex-hide-rail]) div:has(> div > [data-rail-overflow]) + div:has(> main + aside:not(:empty)) {
+    grid-template-columns: minmax(0, 1fr) 350px !important;
+  }
+}
+html[data-ex-hide-rail] div:has(> div > [data-rail-overflow]) + div > aside { display: none !important; }
+main:where(div:has(> div > [data-rail-overflow]) + div > *) {
+  max-width: none !important;
+  border-color: var(--border) !important;
+  border-inline-end-width: 0 !important;
+}
+html[data-ex-feed="medium"] main:where(div:has(> div > [data-rail-overflow]) + div > *) { max-width: 760px !important; }
+html[data-ex-feed="narrow"] main:where(div:has(> div > [data-rail-overflow]) + div > *) { max-width: 600px !important; }
+main [id^="urt:"] { max-width: none !important; }
+
+[data-rail-overflow] nav { align-items: center; gap: 14px; padding: 0 !important; }
+[data-rail-overflow] nav > :is(a, button),
+[data-rail-overflow] nav > :is(a, button) > span:first-child {
+  width: 40px !important;
+  height: 40px !important;
+  min-height: 40px;
+  justify-content: center;
+  border-radius: var(--radius) !important;
+}
+[data-rail-overflow] nav > :is(a, button) > span:first-child { padding: 0 !important; }
+[data-rail-overflow] nav > :is(a, button) svg { width: 20px !important; height: 20px !important; }
+[data-rail-overflow] nav > :is(a, button):is(:hover, :focus-visible, [data-status="active"]) > span:first-child {
+  background: var(--muted) !important;
+  color: var(--foreground) !important;
+}
+html[data-ex-density="compact"] [data-rail-overflow] nav > :is(a, button),
+html[data-ex-density="compact"] [data-rail-overflow] nav > :is(a, button) > span:first-child {
+  height: 34px !important;
+  min-height: 34px;
+}
+html[data-ex-density="compact"] [data-rail-overflow] nav { gap: 8px; }
+[data-rail-overflow] > div:has(> #sidebar-compose-post) { display: flex; justify-content: center; }
+#sidebar-compose-post {
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  margin-top: 16px;
+  padding: 0 !important;
+  border-radius: var(--radius) !important;
+  background: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+}
+#sidebar-compose-post:hover { opacity: 0.9; }
+#sidebar-compose-post > span:has(svg[data-exiter-post-icon]) { display: contents !important; }
+#sidebar-compose-post > span:not(:has(svg[data-exiter-post-icon])) { display: none !important; }
+#sidebar-compose-post svg[data-exiter-post-icon] { width: 16px !important; height: 16px !important; }
+div:has(> [data-rail-overflow]) > div:has(> button[aria-label="Account menu"]) { display: flex; justify-content: center; padding-bottom: 20px; }
+div:has(> [data-rail-overflow]) button[aria-label="Account menu"] { width: 40px !important; height: 40px !important; justify-content: center; border-radius: var(--radius); }
+
+html[data-ex-hide-logo] div:has(> [data-rail-overflow]) > :is(div, h1):has(> a[href="/home"][aria-label="X"]),
+html[data-ex-hide-logo] [data-page-header] a[aria-label="X"],
+html[data-ex-nav-off~="home"] [data-rail-overflow] a[href="/home"],
+html[data-ex-nav-off~="explore"] [data-rail-overflow] a[href="/explore"],
+html[data-ex-nav-off~="notifications"] [data-rail-overflow] a[href="/notifications"],
+html[data-ex-nav-off~="chat"] [data-rail-overflow] a:is([href="/i/chat"], [href="/messages"]),
+html[data-ex-nav-off~="profile"] [data-rail-overflow] a[aria-label="Profile"],
+html[data-ex-nav-off~="more"] [data-rail-overflow] button[aria-label="More menu items"],
+html[data-ex-nav-off~="bookmarks"] [data-rail-overflow] a[href="/i/bookmarks"],
+html[data-ex-nav-off~="lists"] [data-rail-overflow] a[href$="/lists"],
+html[data-ex-nav-off~="communities"] [data-rail-overflow] a[href*="/communities"],
+html[data-ex-nav-off~="calls"] [data-rail-overflow] a[href="/i/calls"],
+html[data-ex-nav-off~="history"] [data-rail-overflow] a[href="/i/history"],
+html[data-ex-nav-off~="articles"] [data-rail-overflow] a[href="/compose/articles"],
+html[data-ex-nav-off~="premium"] [data-rail-overflow] a:is([href="/i/premium"], [href="/i/verified-orgs-signup"]),
+html[data-ex-nav-off~="grok"] [data-rail-overflow] a[href="/i/grok"],
+html[data-ex-nav-off~="creator"] [data-rail-overflow] a[aria-label="Creator Studio"],
+html[data-ex-nav-off~="jobs"] [data-rail-overflow] a[href*="/jobs"] { display: none !important; }
+/* Let the traffic lights occupy the hidden logo's space. */
+html:not([data-ex-hide-logo]) div:has(> [data-rail-overflow]) { padding-top: 0; }
+
+[data-page-header] [data-exiter-hdr-actions] { align-items: stretch !important; }
+[data-page-header] [data-exiter-hdr-actions] > button { align-self: center; flex: none; }
+[data-page-header] [data-tab-underline] { height: 2px !important; border-radius: 0 !important; background: var(--foreground) !important; }
+
+main [role="link"][data-href]:has(> article) { padding-inline: var(--ex-pad) !important; }
+main [role="link"][data-href]:has(> article):hover { background: var(--hover-tint); }
+:where(html:has([data-rail-overflow])) main article :is(div[lang], div.whitespace-pre-wrap.wrap-anywhere) {
+  font-size: var(--ex-font-size) !important;
+  line-height: var(--ex-leading) !important;
+}
+:where(html:has([data-rail-overflow])) main article :is(div[lang], div.whitespace-pre-wrap.wrap-anywhere) a {
+  color: var(--foreground) !important;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--foreground) 30%, transparent);
+  text-underline-offset: 2px;
+}
+:where(html:has([data-rail-overflow])) main article :is(div[lang], div.whitespace-pre-wrap.wrap-anywhere) > button { color: var(--muted-foreground); text-decoration: underline; text-underline-offset: 2px; }
+main article .x-middot-group .text-primary,
+main [data-navigation-stop]:not([data-href]) > article a:not(article article *) > .text-body.text-primary.font-bold {
+  font-size: 14px !important; font-weight: 600 !important; line-height: 20px !important;
+}
+main article .x-middot-group .text-secondary,
+main [data-navigation-stop]:not([data-href]) > article a:not(article article *) > .text-body.text-secondary {
+  font-size: 13px !important;
+  line-height: 20px !important;
+  color: var(--muted-foreground);
+  font-feature-settings: normal;
+  font-variant-numeric: tabular-nums;
+}
+html:is([data-ex-caps="names"], [data-ex-caps="all"]) main article .x-middot-group a > .text-primary,
+html:is([data-ex-caps="names"], [data-ex-caps="all"]) main [data-navigation-stop]:not([data-href]) > article a:not(article article *) > .text-body.text-primary.font-bold {
+  font-size: calc(14px * 0.92) !important;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+html[data-ex-caps="all"] main article .x-middot-group a:not([href*="/status/"]) > .text-secondary,
+html[data-ex-caps="all"] main [data-navigation-stop]:not([data-href]) > article a:not(article article *) > .text-body.text-secondary { text-transform: uppercase; letter-spacing: 0.02em; }
+main [data-top-chrome] h2.text-headline2 { font-size: 17px !important; font-weight: 600 !important; letter-spacing: -0.02em; }
+html[data-ex-density="compact"] main [role="link"][data-href] > article .flex-col.gap-3 { gap: var(--ex-gap); }
+article [data-press-control]:has(video),
+article [data-slot="xds-context-menu-trigger"]:has(> [data-engagement-action="media"]) {
+  max-width: var(--media-max);
+  border-radius: var(--radius-lg);
+  overflow: clip;
+}
+/* Round the media frame and its painted border together inside quoted posts. */
+article [data-slot="embedded-tweet-frame"] :is(
+  div.overflow-hidden:has(> [data-press-control] video),
+  div.overflow-hidden:has(> [data-engagement-action="media"], > [data-slot="xds-context-menu-trigger"] > [data-engagement-action="media"]),
+  [data-press-control]:has(video),
+  [data-slot="xds-context-menu-trigger"]:has(> [data-engagement-action="media"])
+) { border-radius: var(--radius) !important; }
+article [data-engagement-action="like"] button[aria-pressed="true"] { color: var(--destructive) !important; }
+article button[aria-label="Remove bookmark" i] { color: var(--foreground) !important; }
+html[data-ex-hide-metrics] article .x-engagement-button span:has(svg) { display: inline-flex !important; }
+
+:is(main, [role="dialog"]) div:has(> textarea[aria-multiline="true"][aria-autocomplete="list"]) {
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius-input) !important;
+  min-height: 44px;
+  padding: 10px 12px !important;
+}
+:is(main, [role="dialog"]) div:has(> textarea[aria-multiline="true"][aria-autocomplete="list"]) > :is(textarea, [aria-hidden="true"]) {
+  font-size: 15px !important;
+  line-height: 22px !important;
+}
+:is(main, [role="dialog"]) div:has(> textarea[aria-multiline="true"][aria-autocomplete="list"]:focus) {
+  border-color: var(--ring) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ring) 20%, transparent);
+}
+:is(main, [role="dialog"]) :is([data-truncated-item] > button, form:has(textarea[aria-autocomplete="list"][aria-multiline="true"]) button[aria-label]):not(.bg-btn-primary):has(svg[data-exiter-icon]),
+button[aria-label^="Who can reply"]:has(svg[data-exiter-icon="lockOpen"]) {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: var(--radius) !important;
+  color: var(--muted-foreground) !important;
+}
+:is(main, [role="dialog"]) :is([data-truncated-item] > button, form:has(textarea[aria-autocomplete="list"][aria-multiline="true"]) button[aria-label]) svg[data-exiter-icon],
+button[aria-label^="Who can reply"] svg[data-exiter-icon="lockOpen"] { width: 16px !important; height: 16px !important; }
+:is(main, [role="dialog"]) :is([data-truncated-item] > button, form:has(textarea[aria-autocomplete="list"][aria-multiline="true"]) button[aria-label]):not(.bg-btn-primary):has(svg[data-exiter-icon]):is(:hover, :focus-visible) {
+  background: var(--muted) !important;
+  color: var(--foreground) !important;
+}
+:is(main, [role="dialog"]) :is([data-truncated-item]:has(> button:is([aria-label="Generate image"], [aria-label="Content Disclosures"])), form:has(textarea[aria-autocomplete="list"][aria-multiline="true"]) button:is([aria-label="Generate image"], [aria-label="Content Disclosures"])) { display: none !important; }
+:is(main, [role="dialog"]) :is(form:has(textarea[aria-multiline="true"][aria-autocomplete="list"]) button, div:has(> div > div > div > [data-truncated-list] button[aria-label="Add media"]) > div > button).bg-btn-primary {
+  min-width: 64px;
+  height: 32px !important;
+  background: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+  border-radius: var(--radius) !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+}
+:is(main, [role="dialog"]) :is(form:has(textarea[aria-multiline="true"][aria-autocomplete="list"]) button, div:has(> div > div > div > [data-truncated-list] button[aria-label="Add media"]) > div > button).bg-btn-primary:is(:disabled, [aria-disabled="true"]) {
+  background: var(--muted) !important;
+  color: var(--muted-foreground) !important;
+  opacity: 1 !important;
+}

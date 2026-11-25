@@ -4,16 +4,20 @@
 /* (search box + typeahead styling lives in search.css) */
 
 /* Follow / Following / Edit profile: 8px-radius buttons instead of pills */
-[data-testid$="-follow"], [data-testid$="-unfollow"], [data-testid="editProfileButton"], [data-testid="userActions"] {
+[data-testid$="-follow"], [data-testid$="-unfollow"], [data-testid="editProfileButton"], [data-testid="userActions"],
+:is(button, a)[data-slot="xds-button"]:is([aria-label^="Follow @"], [aria-label^="Following @"], [aria-label^="Unfollow @"], [aria-label="Message"], [aria-label^="Message @"]) {
   border-radius: var(--radius) !important; font-size: 13px !important; font-weight: 500 !important; min-height: 32px !important;
 }
-[data-testid$="-follow"] { background: var(--primary) !important; border-color: var(--primary) !important; }
-[data-testid$="-follow"], [data-testid$="-follow"] * { color: var(--primary-foreground) !important; }
+:is([data-testid$="-follow"], button[data-slot="xds-button"][aria-label^="Follow @"]) { background: var(--primary) !important; border-color: var(--primary) !important; }
+:is([data-testid$="-follow"], button[data-slot="xds-button"][aria-label^="Follow @"]),
+:is([data-testid$="-follow"], button[data-slot="xds-button"][aria-label^="Follow @"]) * { color: var(--primary-foreground) !important; }
 [data-testid$="-follow"] svg { display: none; }
+:is(button, a)[data-slot="xds-button"]:is([aria-label="Message"], [aria-label^="Message @"]) { border-color: var(--border) !important; }
 
 /* Back button / circular header buttons (profile, post, search) */
-[data-testid="app-bar-back"], [data-testid="app-bar-close"] { border-radius: var(--radius) !important; border: 0 !important; background: transparent !important; }
-[data-testid="app-bar-back"]:hover, [data-testid="app-bar-close"]:hover { background: var(--muted) !important; }
+:is([data-testid="app-bar-back"], [data-testid="app-bar-close"], main button[aria-label="Back"]) { border-radius: var(--radius) !important; border: 0 !important; background: transparent !important; }
+:is([data-testid="app-bar-back"], [data-testid="app-bar-close"], main button[aria-label="Back"]):hover { background: var(--muted) !important; }
+main button[aria-label="Back"] svg { width: 16px !important; height: 16px !important; }
 
 /* Notification type icons: quiet, no heavy fills */
 [data-testid="notification"] svg { width: 20px !important; height: 20px !important; }
@@ -30,10 +34,12 @@
 
 /* Profile: the whole header fills the column, without scaling the avatar into a portrait. */
 [data-exiter-profile-header], div:has(> a[href$="/header_photo"]) { width: 100% !important; max-width: none !important; box-sizing: border-box; }
-[data-exiter-profile-banner] { width: 100% !important; height: clamp(160px, 18vw, 240px) !important; padding-bottom: 0 !important; flex: none; overflow: hidden !important; }
-[data-exiter-profile-banner] > div { height: 100% !important; }
+:is([data-exiter-profile-banner], main a[aria-label="Opens header photo"][href$="/header_photo"]) { width: 100% !important; height: clamp(160px, 18vw, 240px) !important; padding-bottom: 0 !important; flex: none; overflow: hidden !important; }
+:is([data-exiter-profile-banner], main a[aria-label="Opens header photo"][href$="/header_photo"]) > div { height: 100% !important; aspect-ratio: auto; }
 [data-exiter-profile-banner] [style*="padding-bottom"] { padding-bottom: 0 !important; }
-[data-exiter-profile-banner] img { object-fit: cover !important; }
+:is([data-exiter-profile-banner], main a[aria-label="Opens header photo"][href$="/header_photo"]) img { object-fit: cover !important; }
+main a[aria-label="Opens header photo"][href$="/header_photo"] { display: block; border-radius: 0; }
+main div:has(> a[aria-label="Opens profile photo"][href$="/photo"]) { --profile-avatar-size: 112px; }
 [data-exiter-profile-avatar] {
   width: 112px !important; min-width: 112px !important; max-width: 112px !important;
   height: 112px !important; min-height: 112px !important; max-height: 112px !important;
@@ -69,6 +75,12 @@
 [data-testid="UserProfileHeader_Items"], [data-testid="UserProfileHeader_Items"] span { font-size: 13px !important; color: var(--muted-foreground) !important; }
 [data-testid="UserProfileHeader_Items"] svg { width: 16px !important; height: 16px !important; color: var(--muted-foreground) !important; }
 [data-testid="UserDescription"], [data-testid="UserDescription"] span { font-size: var(--ex-font-size); line-height: var(--ex-leading) !important; }
+main [class~="@container"]:has(a[aria-label="Opens profile photo"][href$="/photo"]) a.text-brand {
+  color: var(--foreground) !important;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--foreground) 30%, transparent);
+  text-underline-offset: 2px;
+}
 [data-testid="primaryColumn"] a[href$="/following"], [data-testid="primaryColumn"] a[href$="/verified_followers"], [data-testid="primaryColumn"] a[href$="/followers"] { color: var(--muted-foreground) !important; }
 [data-testid="primaryColumn"] a[href$="/following"] span, [data-testid="primaryColumn"] a[href$="/verified_followers"] span, [data-testid="primaryColumn"] a[href$="/followers"] span { font-size: 14px !important; }
 [data-testid="primaryColumn"] a[href$="/following"] span:first-child, [data-testid="primaryColumn"] a[href$="/followers"] span:first-child { color: var(--foreground) !important; font-weight: 600 !important; font-variant-numeric: tabular-nums; }

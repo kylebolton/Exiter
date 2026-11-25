@@ -14,7 +14,7 @@ const GROUPS = [
   ] },
   { title: 'Text', rows: [
     { type: 'seg', key: 'fontFamily', label: 'Font', options: [['geist', 'Geist'], ['system', 'System'], ['serif', 'Serif'], ['mono', 'Mono']] },
-    { type: 'range', key: 'fontSize', label: 'Post text size', min: 13, max: 22, step: 1, unit: 'px' },
+    { type: 'range', key: 'fontSize', label: 'Post text size', desc: 'Applies to posts and quoted posts.', min: 13, max: 22, step: 1, unit: 'px' },
     { type: 'seg', key: 'lineHeight', label: 'Line spacing', options: [['tight', 'Tight'], ['normal', 'Normal'], ['relaxed', 'Relaxed']] },
     { type: 'range', key: 'uiZoom', label: 'Interface zoom', desc: 'Scales the whole app.', min: 80, max: 130, step: 5, unit: '%' },
     { type: 'seg', key: 'caps', label: 'CAPITALISE usernames', desc: 'On posts in the feed.', options: [['off', 'Off'], ['names', 'Names'], ['all', 'Names + @handles']] },
